@@ -31,62 +31,6 @@ using namespace std;
 
 #define SF TString::Format 
 
-///
-/// Struct containing NDC sizes and positions of the corresponding TLatex
-///
-struct RectangleNDC {
-	double fX, fY, fWidth, fHeight;
-	TLatex *lat;
-	TText *tex;
-	RectangleNDC() : lat(nullptr), tex(nullptr) {}
-};
-
-
-/// Calculates positions and height and width of rectangle which encapsulates TLatex.
-///
-/// Works well for 4 basic orientation, 0,90,180,270 degree.
-/// Does not work for properly for vertical alignment to the bottom of the line
-///
-inline RectangleNDC GetNDC(TLatex *lat)
-{
-
-	int hAlign = lat->GetTextAlign() / 10 - 1;
-	int vAlign = lat->GetTextAlign() % 10 - 1;
-	if(vAlign == -1) vAlign = 0;
-
-	RectangleNDC rTitle;
-
-	rTitle.fHeight = lat->GetYsize() / (gPad->GetY2()-gPad->GetY1());
-	rTitle.fWidth = lat->GetXsize()  / (gPad->GetX2()-gPad->GetX1());
-	rTitle.fX = lat->GetX();
-	rTitle.fY = lat->GetY();
-
-
-	if(lat->GetTextAngle() == 0) {
-		rTitle.fX -= hAlign*rTitle.fWidth/2.;
-		rTitle.fY -= vAlign*rTitle.fHeight/2.;
-	}
-	else {
-		swap(rTitle.fWidth, rTitle.fHeight);
-		double rat = gPad->GetWh() / double(gPad->GetWw());
-		rat /= gPad->GetAbsWNDC() / double(gPad->GetAbsHNDC());
-		rTitle.fWidth *= rat;
-		rTitle.fHeight *= 1./rat;
-
-		if(lat->GetTextAngle() == 90) {
-			rTitle.fY -= (hAlign)*rTitle.fHeight/2.;
-			vAlign = 2-vAlign;
-			rTitle.fX -=1.*vAlign*rTitle.fWidth/2.;
-		}
-		else if(lat->GetTextAngle() == 270) {
-			hAlign = 2-hAlign;
-			rTitle.fY -= (hAlign)*rTitle.fHeight/2.;
-			rTitle.fX -=1.*vAlign*rTitle.fWidth/2.;
-		}
-	}
-	rTitle.lat = lat;
-	return rTitle;
-}
 
 
 /// Contains coordinates object rectangle envelope
@@ -232,22 +176,9 @@ inline TAxis *GetZaxis() { return GetFrame()->GetZaxis(); }
 
 ///@} 
 
-/// Redraw the current frame and axis ticks.
-///
-/// Useful if the original ticks were covered during plotting
-///
-inline void UpdateFrame()
-{
-    gPad->Update();
-    gPad->RedrawAxis();
-    TFrame *fr = gPad->GetFrame();
-    fr->SetFillStyle(0);
-    fr->Draw();
-    gPad->Update();
-}
 
 
-/// @name Unit helpers
+/// @name Units helpers
 /// Functions to convert units and obtain axis fractions
 ///@{ 
 
@@ -653,73 +584,6 @@ static double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double mi
 
 
 
-void GetLegendSizes(TLegend *leg, double &SizeX, double &SizeY, double &SizeYroot)
-{
-
-    double lineSeparation = 1.2;
-    double markerSize = 1.5;
-    double columnSeparation = 0;
-
-    //double fontSize = RelFontToPx(GetYaxis()->GetTitleSize());
-    double fontSize = RelFontToPx(leg->GetTextSize());
-
-    gPad->Update();
-    //cout <<"There is just start " <<  gPad->GetUymax() << " "<< gPad->GetUymin() << endl;
-
-    leg->SetBorderSize(0);
-    //leg->SetLineStyle(2);
-    leg->SetFillStyle(0);
-    leg->SetTextSize(PxFontToRel(fontSize));
-
-    double fSizeNDCy = fontSize / (gPad->GetWh() * gPad->GetAbsHNDC());
-    double fSizeNDCx = fontSize / (gPad->GetWw() * gPad->GetAbsWNDC());
-
-    int nHeaders = 0;
-    int nLegItems = 0;
-
-    int nCols = leg->GetNColumns();
-    vector<double> maxC(nCols, 0);
-    double headerW = 0;
-    int colId = 0;
-    for(const auto &&entry : *leg->GetListOfPrimitives()) {
-        TString lab = dynamic_cast<TLegendEntry *>(entry)->GetLabel();
-        TString opt = dynamic_cast<TLegendEntry *>(entry)->GetOption();
-        cout << "Label "<< leg->GetNRows()<<" " << lab << endl;
-        TLatex *lat = new TLatex(0.5, 0.5, lab);
-        lat->SetTextSize(leg->GetTextSize());
-        lat->SetTextFont(leg->GetTextFont());
-
-        double textW = GetNDC(lat).fWidth;
-        if(opt == "h") {
-            headerW = max(headerW, textW);
-            ++nHeaders;
-            colId = -1;
-        }
-        else {
-            maxC[colId] = max(maxC[colId], textW);
-            ++nLegItems;
-        }
-        colId = (colId != nCols-1) ? colId + 1 : 0;
-        delete lat;
-    }
-    double maxW = accumulate(maxC.begin(),maxC.end(),0.);
-
-    int nRows = nHeaders + (nLegItems+nCols-1)/nCols;
-    //cout << "RADEK nRows " << nRows << endl;
-    SizeY = lineSeparation*fSizeNDCy*nRows;
-
-    headerW += 0.1*fSizeNDCx*markerSize;
-
-    SizeX = max(nCols*fSizeNDCx*markerSize +
-               (nCols-1)*fSizeNDCx*columnSeparation + maxW, headerW);
-    leg->SetMargin( nCols*fSizeNDCx*markerSize / SizeX);
-
-    leg->SetColumnSeparation((nCols-1)*fSizeNDCx*columnSeparation / SizeX);
-
-
-    SizeYroot = lineSeparation*fSizeNDCy*leg->GetNRows();
-
-}
 
 static Point Px2NDC(Point p);
 
@@ -962,6 +826,9 @@ struct PLACER {
 
 };
 
+/// @name Auto-legend
+/// Functions to place lagend automaticaly and prevent overlaps
+///@{ 
 
 /// Convert layout bit to string
 ///
@@ -987,7 +854,62 @@ inline unsigned SimplifyPos(unsigned pos)
     return pos;
 }
 
+///
+/// Struct containing NDC sizes and positions of the corresponding TLatex
+///
+struct RectangleNDC {
+	double fX, fY, fWidth, fHeight;
+	TLatex *lat;
+	TText *tex;
+	RectangleNDC() : lat(nullptr), tex(nullptr) {}
+};
 
+
+/// Calculates positions and height and width of rectangle which encapsulates TLatex.
+///
+/// Works well for 4 basic orientation, 0,90,180,270 degree.
+/// Does not work for properly for vertical alignment to the bottom of the line
+///
+inline RectangleNDC GetNDC(TLatex *lat)
+{
+
+	int hAlign = lat->GetTextAlign() / 10 - 1;
+	int vAlign = lat->GetTextAlign() % 10 - 1;
+	if(vAlign == -1) vAlign = 0;
+
+	RectangleNDC rTitle;
+
+	rTitle.fHeight = lat->GetYsize() / (gPad->GetY2()-gPad->GetY1());
+	rTitle.fWidth = lat->GetXsize()  / (gPad->GetX2()-gPad->GetX1());
+	rTitle.fX = lat->GetX();
+	rTitle.fY = lat->GetY();
+
+
+	if(lat->GetTextAngle() == 0) {
+		rTitle.fX -= hAlign*rTitle.fWidth/2.;
+		rTitle.fY -= vAlign*rTitle.fHeight/2.;
+	}
+	else {
+		swap(rTitle.fWidth, rTitle.fHeight);
+		double rat = gPad->GetWh() / double(gPad->GetWw());
+		rat /= gPad->GetAbsWNDC() / double(gPad->GetAbsHNDC());
+		rTitle.fWidth *= rat;
+		rTitle.fHeight *= 1./rat;
+
+		if(lat->GetTextAngle() == 90) {
+			rTitle.fY -= (hAlign)*rTitle.fHeight/2.;
+			vAlign = 2-vAlign;
+			rTitle.fX -=1.*vAlign*rTitle.fWidth/2.;
+		}
+		else if(lat->GetTextAngle() == 270) {
+			hAlign = 2-hAlign;
+			rTitle.fY -= (hAlign)*rTitle.fHeight/2.;
+			rTitle.fX -=1.*vAlign*rTitle.fWidth/2.;
+		}
+	}
+	rTitle.lat = lat;
+	return rTitle;
+}
 
 /// Define new legend at position pos with nCols columns.
 ///
@@ -1003,6 +925,81 @@ TLegend *newLegend(unsigned pos, int nCols = 1)
         leg->SetNColumns(nCols);
         return leg;
 }
+
+/// Calculates sizes of the legend in NDC
+///
+/// Note that due to the bug in root the y-size to be set to TLegend object
+/// is sometimes diffrent than the real size
+void GetLegendSizes(TLegend *leg, double &SizeX, double &SizeY, double &SizeYroot)
+{
+
+    double lineSeparation = 1.2;
+    double markerSize = 1.5;
+    double columnSeparation = 0;
+
+    //double fontSize = RelFontToPx(GetYaxis()->GetTitleSize());
+    double fontSize = RelFontToPx(leg->GetTextSize());
+
+    gPad->Update();
+    //cout <<"There is just start " <<  gPad->GetUymax() << " "<< gPad->GetUymin() << endl;
+
+    leg->SetBorderSize(0);
+    //leg->SetLineStyle(2);
+    leg->SetFillStyle(0);
+    leg->SetTextSize(PxFontToRel(fontSize));
+
+    double fSizeNDCy = fontSize / (gPad->GetWh() * gPad->GetAbsHNDC());
+    double fSizeNDCx = fontSize / (gPad->GetWw() * gPad->GetAbsWNDC());
+
+    int nHeaders = 0;
+    int nLegItems = 0;
+
+    int nCols = leg->GetNColumns();
+    vector<double> maxC(nCols, 0);
+    double headerW = 0;
+    int colId = 0;
+    for(const auto &&entry : *leg->GetListOfPrimitives()) {
+        TString lab = dynamic_cast<TLegendEntry *>(entry)->GetLabel();
+        TString opt = dynamic_cast<TLegendEntry *>(entry)->GetOption();
+        cout << "Label "<< leg->GetNRows()<<" " << lab << endl;
+        TLatex *lat = new TLatex(0.5, 0.5, lab);
+        lat->SetTextSize(leg->GetTextSize());
+        lat->SetTextFont(leg->GetTextFont());
+
+        double textW = GetNDC(lat).fWidth;
+        if(opt == "h") {
+            headerW = max(headerW, textW);
+            ++nHeaders;
+            colId = -1;
+        }
+        else {
+            maxC[colId] = max(maxC[colId], textW);
+            ++nLegItems;
+        }
+        colId = (colId != nCols-1) ? colId + 1 : 0;
+        delete lat;
+    }
+    double maxW = accumulate(maxC.begin(),maxC.end(),0.);
+
+    int nRows = nHeaders + (nLegItems+nCols-1)/nCols;
+    //cout << "RADEK nRows " << nRows << endl;
+    SizeY = lineSeparation*fSizeNDCy*nRows;
+
+    headerW += 0.1*fSizeNDCx*markerSize;
+
+    SizeX = max(nCols*fSizeNDCx*markerSize +
+               (nCols-1)*fSizeNDCx*columnSeparation + maxW, headerW);
+    leg->SetMargin( nCols*fSizeNDCx*markerSize / SizeX);
+
+    leg->SetColumnSeparation((nCols-1)*fSizeNDCx*columnSeparation / SizeX);
+
+
+    SizeYroot = lineSeparation*fSizeNDCy*leg->GetNRows();
+
+}
+
+
+
 
 /// Setup the position of legends provided in legs array
 ///
@@ -1082,63 +1079,6 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange=false)
 
 
 
-/// Construct the lattice of pads according to the provided x and y sizes
-///
-/// Comparing to classical Divide method this function left no empty space
-/// between frames but left spaces for axes.
-/// Note that without setting the offsets, font sizes and tics manually
-/// the ticks differs between pads.
-/// From this reason, we recommend calling SetFTO() in each pad
-/// The margins of the original pad are kept
-/// @param xDivs vector defining horizontal sizes of frames, the absolute normalisation does not matter
-/// @param yDivs vector defining vertical sizes of frames, the absolute normalisation does not matter
-inline void DividePad(vector<double> xDivs, vector<double> yDivs)
-{
-    double lMag = gPad->GetLeftMargin();
-    double rMag = gPad->GetRightMargin();
-    double tMag = gPad->GetTopMargin();
-    double bMag = gPad->GetBottomMargin();
-
-    int nx = xDivs.size();
-    int ny = yDivs.size();
-
-    double Nx = accumulate(xDivs.begin(), xDivs.end(), 0.);
-    double Ny = accumulate(yDivs.begin(), yDivs.end(), 0.);
-    vector<double> xPos(nx+1), yPos(ny+1);
-    xPos[0] = yPos[0] = 0;
-    for(int i = 1; i <= nx; ++i)
-        xPos[i] = xPos[i-1] + xDivs[i-1]/Nx * (1-lMag-rMag);
-    for(int i = 1; i <= ny; ++i)
-        yPos[i] = yPos[i-1] + yDivs[i-1]/Ny * (1-tMag-bMag);
-
-    
-    for(int ix = 0; ix < nx; ++ix)
-    for(int iy = 0; iy < ny; ++iy) {
-        double xl = (ix == 0)    ? 0 : lMag+xPos[ix];
-        double xr = (ix == nx-1) ? 1 : lMag+xPos[ix+1];
-
-        double yt = (iy == 0)    ? 1 : 1-tMag-yPos[iy];
-        double yb = (iy == ny-1) ? 0 : 1-tMag-yPos[iy+1];
-
-        int id = iy*nx+ix+1;
-        TPad *pad = new TPad(SF("%s_%d", gPad->GetName(), id), "", xl, yb, xr, yt);
-
-        pad->SetLeftMargin( (ix == 0) ? lMag/(xPos[1]+lMag) : 0);
-        pad->SetRightMargin( (ix == nx-1) ? rMag/( 1-lMag - xPos[nx-1]) : 0);
-        pad->SetTopMargin( (iy == 0) ? tMag/(yPos[1]+tMag) : 0);
-        pad->SetBottomMargin( (iy == ny-1) ? bMag/(1-tMag - yPos[ny-1]) : 0);
-
-//        if(ix == nx-1) {
-//            cout << "Hela : " <<  lMag + xPos[nx-1] << endl;
-//            cout << "lMag rMag : " <<lMag <<" "<<  rMag << endl;
-//            cout  << "Ratio " << rMag / (1-lMag-xPos[nx-1]) << endl;
-//        }
-
-        pad->SetNumber(id);
-        pad->Draw();
-    }
-
-}
 
 
 
@@ -1344,6 +1284,28 @@ double Borders::Distance2(const Rectangle &r1, const Rectangle &r2)
         return 0.;
 }
 
+///@}
+
+
+/// @name Miscellaneous
+/// Utilities for redraw axes, divde pad and auto y-range calculation
+///@{ 
+
+/// Redraw the current frame and axis ticks.
+///
+/// Useful if the original ticks were covered during plotting
+///
+inline void UpdateFrame()
+{
+    gPad->Update();
+    gPad->RedrawAxis();
+    TFrame *fr = gPad->GetFrame();
+    fr->SetFillStyle(0);
+    fr->Draw();
+    gPad->Update();
+}
+
+
 /// Calculate the automatic range of the vertical axis and apply it.
 ///
 /// Useful when several histograms are plotted to the same frame. 
@@ -1430,6 +1392,68 @@ inline void CalcYaxisRange()
 		hFrame->SetMaximum(yMax);
 	}
 }
+
+
+/// Construct the lattice of pads according to the provided x and y sizes
+///
+/// Comparing to classical Divide method this function left no empty space
+/// between frames but left spaces for axes.
+/// Note that without setting the offsets, font sizes and tics manually
+/// the ticks differs between pads.
+/// From this reason, we recommend calling SetFTO() in each pad
+/// The margins of the original pad are kept
+/// @param xDivs vector defining horizontal sizes of frames, the absolute normalisation does not matter
+/// @param yDivs vector defining vertical sizes of frames, the absolute normalisation does not matter
+inline void DividePad(vector<double> xDivs, vector<double> yDivs)
+{
+    double lMag = gPad->GetLeftMargin();
+    double rMag = gPad->GetRightMargin();
+    double tMag = gPad->GetTopMargin();
+    double bMag = gPad->GetBottomMargin();
+
+    int nx = xDivs.size();
+    int ny = yDivs.size();
+
+    double Nx = accumulate(xDivs.begin(), xDivs.end(), 0.);
+    double Ny = accumulate(yDivs.begin(), yDivs.end(), 0.);
+    vector<double> xPos(nx+1), yPos(ny+1);
+    xPos[0] = yPos[0] = 0;
+    for(int i = 1; i <= nx; ++i)
+        xPos[i] = xPos[i-1] + xDivs[i-1]/Nx * (1-lMag-rMag);
+    for(int i = 1; i <= ny; ++i)
+        yPos[i] = yPos[i-1] + yDivs[i-1]/Ny * (1-tMag-bMag);
+
+    
+    for(int ix = 0; ix < nx; ++ix)
+    for(int iy = 0; iy < ny; ++iy) {
+        double xl = (ix == 0)    ? 0 : lMag+xPos[ix];
+        double xr = (ix == nx-1) ? 1 : lMag+xPos[ix+1];
+
+        double yt = (iy == 0)    ? 1 : 1-tMag-yPos[iy];
+        double yb = (iy == ny-1) ? 0 : 1-tMag-yPos[iy+1];
+
+        int id = iy*nx+ix+1;
+        TPad *pad = new TPad(SF("%s_%d", gPad->GetName(), id), "", xl, yb, xr, yt);
+
+        pad->SetLeftMargin( (ix == 0) ? lMag/(xPos[1]+lMag) : 0);
+        pad->SetRightMargin( (ix == nx-1) ? rMag/( 1-lMag - xPos[nx-1]) : 0);
+        pad->SetTopMargin( (iy == 0) ? tMag/(yPos[1]+tMag) : 0);
+        pad->SetBottomMargin( (iy == ny-1) ? bMag/(1-tMag - yPos[ny-1]) : 0);
+
+//        if(ix == nx-1) {
+//            cout << "Hela : " <<  lMag + xPos[nx-1] << endl;
+//            cout << "lMag rMag : " <<lMag <<" "<<  rMag << endl;
+//            cout  << "Ratio " << rMag / (1-lMag-xPos[nx-1]) << endl;
+//        }
+
+        pad->SetNumber(id);
+        pad->Draw();
+    }
+}
+
+
+///@}
+
 
 
 }

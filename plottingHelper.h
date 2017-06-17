@@ -22,13 +22,18 @@
 #include <numeric>
 #include <string>
 
-
+/// The namespace of whole Plotting Helper utility
+/// 
+///
 namespace plottingHelper {
 
 using namespace std;
 
 #define SF TString::Format 
 
+///
+/// Struct containing NDC sizes and positions of the corresponding TLatex
+///
 struct RectangleNDC {
 	double fX, fY, fWidth, fHeight;
 	TLatex *lat;
@@ -37,6 +42,11 @@ struct RectangleNDC {
 };
 
 
+/// Calculates positions and height and width of rectangle which encapsulates TLatex.
+///
+/// Works well for 4 basic orientation, 0,90,180,270 degree.
+/// Does not work for properly for vertical alignment to the bottom of the line
+///
 inline RectangleNDC GetNDC(TLatex *lat)
 {
 
@@ -79,6 +89,7 @@ inline RectangleNDC GetNDC(TLatex *lat)
 }
 
 
+/// Contains coordinates object rectangle envelope
 struct Rectangle {
 	double fX, fY, fWidth, fHeight;
 };
@@ -92,27 +103,31 @@ struct Point {
 
 
 
+/// Enum with positions which are used for legend placing.
+///
+/// The numbers corresponds to numeric keyboard on Nokia cell-phones
+/// It means 1 - top left, 3 top right
+/// 7 - bottom left, 9 bottom right
+/// the side positions 2,4,6,8 denotes that legend can be placed on arbitrary place along the side
+/// The kPos5 represents arbitrary position
 enum {
-    kPos1 = BIT(1), kPos2 = BIT(2), kPos3 = BIT(3),
-    kPos4 = BIT(4), kPos5 = BIT(5), kPos6 = BIT(6),
-    kPos7 = BIT(7), kPos8 = BIT(8), kPos9 = BIT(9)
+    kPos1 = BIT(1), ///< Left top corner
+    kPos2 = BIT(2), ///< Top side
+    kPos3 = BIT(3), ///< Right top corner
+    kPos4 = BIT(4), ///< Left side
+    kPos5 = BIT(5), ///< Arbitrary position
+    kPos6 = BIT(6), ///< Right side
+    kPos7 = BIT(7), ///< Left bottom corner
+    kPos8 = BIT(8), ///< Bottom side
+    kPos9 = BIT(9)  ///< Right bottom corner
 };
 
-inline unsigned SimplifyPos(unsigned pos)
-{
-    if(pos & kPos5) return kPos5;
-    if(pos & kPos2) pos &= !kPos1 & !kPos3;
-    if(pos & kPos4) pos &= !kPos1 & !kPos7;
-    if(pos & kPos6) pos &= !kPos3 & !kPos9;
-    if(pos & kPos8) pos &= !kPos7 & !kPos9;
-    return pos;
-}
 
-inline const char *SetLayout(unsigned pos)
-{
-    return to_string(pos).c_str();
-}
 
+/// Iterator which goes over all positions specified in the constructor
+///
+/// Note that bitwise "or" operator | can be used to select more complex layout
+///
 struct PosIterator {
     PosIterator(int _nSteps, unsigned Pos) {
         pos = Pos;
@@ -124,7 +139,7 @@ struct PosIterator {
 
     bool Iterate() {
         int last = nSteps-1;
-        int i, j;
+        int i=0, j=0;
         //cout << iSave <<" "<< jSave <<" "<< nSteps<< endl;
         for(i = iSave; i < nSteps; ++i)
         for(j = (jSave+1)*(i==iSave); j < nSteps; ++j) {
@@ -163,12 +178,13 @@ struct PosIterator {
     unsigned pos;
 };
 
-static void CalcYaxisRange();
+/// @name Getters
+/// Functions returning elements of the active frame
+///@{ 
 
-///
 /// The method returns current frame on the active pad.
-/// Useful for example to set maximum of the y-axis, GetFrame()->SetMaximum(5)
 ///
+/// Useful for example to set maximum of the y-axis, GetFrame()->SetMaximum(5)
 inline TH1 *GetFrame()
 {
    // get first histogram in the list of primitives
@@ -205,22 +221,41 @@ inline TH1 *GetFrame()
 	return hobj;
 }
 
-///
-/// Return x-axis of the acitve frame
-///
+/// Return x-axis of the active frame
 inline TAxis *GetXaxis() { return GetFrame()->GetXaxis(); }  
-///
-/// Return y-axis of the acitve frame
-///
+
+/// Return y-axis of the active frame
 inline TAxis *GetYaxis() { return GetFrame()->GetYaxis(); }  
-///
-/// Return z-axis of the acitve frame
-///
+
+/// Return z-axis of the active frame
 inline TAxis *GetZaxis() { return GetFrame()->GetZaxis(); }  
 
+///@} 
+
+/// Redraw the current frame and axis ticks.
 ///
-/// Trnasform font size from px to the relative units valid in current pad (gPad)
+/// Useful if the original ticks were covered during plotting
 ///
+inline void UpdateFrame()
+{
+    gPad->Update();
+    gPad->RedrawAxis();
+    TFrame *fr = gPad->GetFrame();
+    fr->SetFillStyle(0);
+    fr->Draw();
+    gPad->Update();
+}
+
+
+/// @name Unit helpers
+/// Functions to convert units and obtain axis fractions
+///@{ 
+
+/// Transform font size from px to the relative units
+///
+/// The returned size is dependent on the currently active pad - the gPad pointer
+/// @param px The font size in px
+/// @return The font size in relative units
 inline double PxFontToRel(double px)
 {
 	double pxH = gPad->GetWh()*gPad->GetAbsHNDC();
@@ -235,11 +270,12 @@ inline double PxFontToRel(double px)
 	         //else return px/pad_height / corY;
 }
 
-static Point Px2NDC(Point p);
 
+/// Transform font size from relative units to pixels
 ///
-/// Trnasform font size from the relative units valid in current pad (gPad) to px
-///
+/// The returned size is dependent on the currently active pad - the gPad pointer
+/// @param rel The font size in relative units
+/// @return The font size in pixels
 inline double RelFontToPx(double rel)
 {
 	double pxH = gPad->GetWh()*gPad->GetAbsHNDC();
@@ -249,68 +285,85 @@ inline double RelFontToPx(double rel)
 }
 
 
-///
-/// Fraction of the pad widht covered by x-axis
-///
+/// Fraction of the pad width covered by x-axis
 inline double GetAxisFractionX()
 {
-    return (gPad->GetUxmax() - gPad->GetUxmin())/(gPad->GetX2() - gPad->GetX1());
+    //return (gPad->GetUxmax() - gPad->GetUxmin())/(gPad->GetX2() - gPad->GetX1());
+    return (1. - gPad->GetLeftMargin() - gPad->GetRightMargin());
 }
 
-///
 /// Fraction of the pad height covered by y-axis
-///
 inline double GetAxisFractionY()
 {
-    return (gPad->GetUymax() - gPad->GetUymin())/(gPad->GetY2() - gPad->GetY1());
+    //return (gPad->GetUymax() - gPad->GetUymin())/(gPad->GetY2() - gPad->GetY1());
+    return (1. - gPad->GetBottomMargin() - gPad->GetTopMargin());
 }
 
-///
 /// Convert tick length in px of x-axis to the relative units
-///
 inline double TickAbsToRelX(double tick)
 {
     double nom = GetAxisFractionX() * gPad->GetAbsHNDC() * gPad->GetWh();
 	return tick/nom;
 }
 
-///
+
 /// Convert tick length in px of y-axis to the relative units
-///
 inline double TickAbsToRelY(double tick)
 {
     double nom =  GetAxisFractionY() * gPad->GetAbsWNDC() * gPad->GetWw();
 	return tick/nom;
 }
 
+///@}
+
+/// @name Decorators
+/// Functions to simply define text sizes, offsets and axis ticks
+///@{ 
+
+/// Set text size of x- and y-axis titles and labels to the frame title
 ///
-/// Set text size of x and y-axis titles and labels to pxX
-///
-inline void SetFonts(TH1 *frame, double pxX, double pxY)
+/// Note that the Canvas width and height is specified in TCanvas constructor.
+/// The font size is defined as the height of envelope between "gh" characters
+/// The height of numbers is for example 3/4 of the font size.
+inline void SetFonts(double pxX, double pxY = -1, double pxT = -1)
 {
-    double relSize = PxFontToRel(pxX);
-	frame->GetXaxis()->SetTitleSize(relSize);
-	frame->GetXaxis()->SetLabelSize(relSize);
+    TH1 *frame = GetFrame();
+    if(pxY < 0) pxY = pxX;
+    if(pxT < 0) pxT = pxX;
 
-	frame->GetYaxis()->SetTitleSize(relSize);
-	frame->GetYaxis()->SetLabelSize(relSize);
+    double relSizeX = PxFontToRel(pxX);
+    double relSizeY = PxFontToRel(pxY);
+    double relSizeT = PxFontToRel(pxT);
 
-    frame->SetTitleSize(relSize);
+	frame->GetXaxis()->SetTitleSize(relSizeX);
+	frame->GetXaxis()->SetLabelSize(relSizeX);
+
+	frame->GetYaxis()->SetTitleSize(relSizeY);
+	frame->GetYaxis()->SetLabelSize(relSizeY);
+
+    frame->SetTitleSize(relSizeT);
 }
 
 ///
-/// Set ticks size of x and y axis in px
+/// Set ticks sizes of x and y-axis in px
 ///
-inline void SetTicks(TH1 *frame, double tickX, double tickY)
+inline void SetTicks(double tickX, double tickY = -1)
 {
-    gPad->Update();
+    //gPad->Update();
+    if(tickY < 0) tickY = tickX;
+    TH1 *frame = GetFrame();
 	frame->GetXaxis()->SetTickSize(TickAbsToRelX(tickX) );
 	frame->GetYaxis()->SetTickSize(TickAbsToRelY(tickY) );
 }
 
-
-inline void SetLabelOffsetX(TH1 *frame, double off)
+/// Set offset of the x-axis labels.
+///
+/// The zero offset correspond to labels "standing" on top of the x-axis.
+/// The offset is measured in units corresponds to height of numbers like "012..."
+/// Therefore offset 1 correspond to labels touching x-axis by from the bottom.
+inline void SetLabelOffsetX(double off)
 {
+    TH1 *frame = GetFrame();
     double labSize = frame->GetXaxis()->GetLabelSize();
     double off0 = 0;
     if(gPad->GetLogx()) {
@@ -331,6 +384,121 @@ inline void SetLabelOffsetX(TH1 *frame, double off)
 }
 
 
+
+
+/// Set offset of the x-axis title.
+///
+/// The zero offset corresponds to title which is intersect by the x-axi in its middle.
+/// The offset is measured in units corresponds to height of numbers like "012..."
+/// Therefore offset 0.5 corresponds to numeric title touching x-axis by from the bottom.
+/// Note that the height of numbers is 3/4 of the font size (height) which is defined by the
+/// gh vertical envelope. It means that if title contains h, offset 4/3 * 0.5 would result of "h" touching axis
+/// The title text size must be set before offset!
+///
+inline void SetTitleOffsetX(double off)
+{
+    TH1 *frame = GetFrame();
+    TAxis *ax = frame->GetXaxis();
+    off *= 3/4.;
+    ax->SetTitleOffset(off* RelFontToPx(ax->GetTitleSize())/1.6 / ( gPad->GetWh()* ax->GetTitleSize()*gPad->GetAbsHNDC() ) );
+}
+
+/// Set offset of the y-axis labels.
+///
+/// The zero offset corresponds to labels touching the y-axis from the left
+/// The offset is measured in units corresponds to height of numbers like "012..."
+/// I.e. the width of 0 if lying.
+/// The label text size must be set before offset!
+///
+inline void SetLabelOffsetY(double off)
+{
+    TH1 *frame = GetFrame();
+    TAxis *ax = frame->GetYaxis();
+    double labSize = ax->GetLabelSize();
+    double pxW =  gPad->GetWw() * gPad->GetAbsWNDC() ;
+    double fact = RelFontToPx(labSize)/pxW;
+
+    double off0 = 0;
+    if(gPad->GetLogy())
+        off0 = -0.08;
+
+
+    off *= 3/4.;
+    ax->SetLabelOffset(off *  fact + off0*labSize );
+}
+
+/// Set offset of the y-axis title.
+///
+/// The zero offset corresponds to title which is intersect by the y-axis in its middle.
+/// The offset is measured in units corresponds to height of numbers like "012..."
+/// Note that the height of numbers is 3/4 of the font size (height) which is defined by the
+/// gh vertical envelope.
+/// The title text size must be set before offset!
+///
+inline void SetTitleOffsetY(double off)
+{
+    TH1 *frame = GetFrame();
+    TAxis *ax = frame->GetYaxis();
+    off *= 3/4.;//to vertical size of "0"
+    ax->SetTitleOffset( off*  RelFontToPx(ax->GetTitleSize())/1.6 / ( gPad->GetWw()*ax->GetTitleSize()* gPad->GetAbsWNDC() ) );
+}
+
+/// Set of the fonts and ticks sizes 
+///
+/// Set size of x-,y-axis labels and titles to px (in pixels).
+/// In addition the x and y tick lengths can be specified
+inline void SetFontsTicks(double px, double tickX, double tickY = -1.)
+{
+    SetFonts(px);
+    SetTicks(tickX, tickY);
+}
+
+/// Set offsets of x,y labels and titles
+///
+/// Note that root is using different alignment of labels and titles
+/// We don't try to correct for that as we assume that in general
+/// the actual form of the title can be specified later
+/// The title's and label's text sizes must be set before offsets!
+inline void SetOffsets(double lX, double tX, double lY, double tY)
+{
+    SetLabelOffsetX(lX);
+    SetTitleOffsetX(tX);
+    SetLabelOffsetY(lY);
+    SetTitleOffsetY(tY);
+}
+
+/// Set Fonts, Ticks and Offsets
+///
+/// Set up fonts sizes, ticks length and titles/labels offsets
+/// All parameters are given as vectors, call as SetFTO({14}, {5}, {1.3, 2.3, 0.3, 2.3});
+inline void SetFTO(vector<double> fonts, vector<double> ticks, vector<double> offsets)
+{
+    fonts.resize(3, -1);
+    ticks.resize(2, -1);
+    offsets.resize(4, 0);
+
+    SetFonts(fonts[0], fonts[1], fonts[2]);
+    SetTicks(ticks[0], ticks[1]);
+    SetOffsets(offsets[0], offsets[1], offsets[2], offsets[3]);
+}
+
+///@}
+
+
+
+/// @name General titles
+/// Functions to simplify drawing of pad captions outside of the frames
+/// Especially useful in case of describing complex grid of frames.
+/// For captions inside of frame consider using of automatic legend.
+/// Currently under development.
+///@{ 
+
+
+/// Draw text in top of the current pad.
+///
+/// Text size is given by frame title
+/// The text alignment l,c,r can be specified
+///
 inline void DrawTextUp(TString text, TString pos = "c")
 {
     double t = gPad->GetTopMargin();
@@ -443,8 +611,8 @@ inline void DrawText(TVirtualPad *pad1, TVirtualPad *pad2, TLatex *lat, unsigned
     }
 
     if(pos == kPos1 || pos == kPos2 || pos == kPos3) {
-        double l1 = pad1->GetAbsXlowNDC() + pad1->GetAbsWNDC()*pad1->GetLeftMargin();
-        double l2 = pad2->GetAbsXlowNDC() + pad2->GetAbsWNDC()*pad2->GetLeftMargin();
+        //double l1 = pad1->GetAbsXlowNDC() + pad1->GetAbsWNDC()*pad1->GetLeftMargin();
+        //double l2 = pad2->GetAbsXlowNDC() + pad2->GetAbsWNDC()*pad2->GetLeftMargin();
     }
 
     cout << "Plotting " <<(void*)gPad<<" "<< x <<" "<< y<<" "<< lat->GetTitle() << endl;
@@ -455,59 +623,18 @@ inline void DrawText(TVirtualPad *pad1, TVirtualPad *pad2, TLatex *lat, unsigned
 }
 
 
-
-
-
-inline void SetTitleOffsetX(TH1 *frame, double off)
-{
-    TAxis *ax = frame->GetXaxis();
-    off *= 3/4.;
-    ax->SetTitleOffset(off* RelFontToPx(ax->GetTitleSize())/1.6 / ( gPad->GetWh()* ax->GetTitleSize()*gPad->GetAbsHNDC() ) );
-}
-
-inline void SetLabelOffsetY(TH1 *frame, double off)
-{
-    TAxis *ax = frame->GetYaxis();
-    double labSize = ax->GetLabelSize();
-    double pxW =  gPad->GetWw() * gPad->GetAbsWNDC() ;
-    double fact = RelFontToPx(labSize)/pxW;
-
-    double off0 = 0;
-    if(gPad->GetLogy())
-        off0 = -0.08;
-
-
-    off *= 3/4.;
-    ax->SetLabelOffset(off *  fact + off0*labSize );
-}
-
-inline void SetTitleOffsetY(TH1 *frame, double off)
-{
-    TAxis *ax = frame->GetYaxis();
-    off *= 3/4.;//to vertical size of "0"
-    ax->SetTitleOffset( off*  RelFontToPx(ax->GetTitleSize())/1.6 / ( gPad->GetWw()*ax->GetTitleSize()* gPad->GetAbsWNDC() ) );
-}
+///@}
 
 
 
 
-inline void SetFontsTicks(double px, double tickX, double tickY = -1.)
-{
-    TH1 *fr = GetFrame();
-    SetFonts(fr, px, px);
-    if(tickY == -1.) tickY = tickX;
-    SetTicks(fr, tickX, tickY);
-}
 
-inline void SetOffsets(double lX, double tX, double lY, double tY)
-{
-    TH1 *fr = GetFrame();
-    SetLabelOffsetX(fr, lX);
-    SetTitleOffsetX(fr, tX);
-    SetLabelOffsetY(fr, lY);
-    SetTitleOffsetY(fr, tY);
-}
 
+
+///
+/// Struct specifying borders of some object which can be approximated by rectangles
+/// We use such approach to define position of histograms
+///
 struct Borders{
     vector<Rectangle> recs;
     void GetHistBorders(TH1 *h);
@@ -523,8 +650,6 @@ static double MinDistance2(double minSkip, const Borders &br1, const Borders &br
 static double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h);
 static double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip);
 
-
-void PlaceLegends(vector<TLegend*> legs, bool keepRange=false);
 
 
 
@@ -596,6 +721,7 @@ void GetLegendSizes(TLegend *leg, double &SizeX, double &SizeY, double &SizeYroo
 
 }
 
+static Point Px2NDC(Point p);
 
 struct PLACER {
 
@@ -836,6 +962,39 @@ struct PLACER {
 
 };
 
+
+/// Convert layout bit to string
+///
+/// Used to setup the position of particular TLegend by SetName
+/// For example leg->SetName(SetLayout(kPos1)) for legend in to top left
+/// Used internally by newLegend
+/// @see newLegend()
+/// @param pos the position bit, for instance kPos2 | kPos8
+/// @return the number printed in decadic base to the string
+inline const char *SetLayout(unsigned pos)
+{
+    return to_string(pos).c_str();
+}
+
+
+inline unsigned SimplifyPos(unsigned pos)
+{
+    if(pos & kPos5) return kPos5;
+    if(pos & kPos2) pos &= !kPos1 & !kPos3;
+    if(pos & kPos4) pos &= !kPos1 & !kPos7;
+    if(pos & kPos6) pos &= !kPos3 & !kPos9;
+    if(pos & kPos8) pos &= !kPos7 & !kPos9;
+    return pos;
+}
+
+
+
+/// Define new legend at position pos with nCols columns.
+///
+/// The text size is set to be the same as the size of y-axis title
+/// All this values can be changed later on manually, like
+/// leg->SetTextSize(1.3*leg->GetTextSize())
+///
 TLegend *newLegend(unsigned pos, int nCols = 1)
 {
         TLegend *leg = new TLegend(0., 0., 0., 0.);
@@ -845,7 +1004,12 @@ TLegend *newLegend(unsigned pos, int nCols = 1)
         return leg;
 }
 
-void PlaceLegends(vector<TLegend*> legs, bool keepRange)
+/// Setup the position of legends provided in legs array
+///
+/// Note that the legends must be drawn manually
+/// To draw legends directly, use DrawLegends
+///
+void PlaceLegends(vector<TLegend*> legs, bool keepRange = false)
 {
     int nScaleSteps = keepRange ? 1 : 10;
 
@@ -903,6 +1067,11 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
     */
 }
 
+/// Draw legends provided in vector legs in such a way that there is no overlap.
+///
+/// in case that keepRange=true the y-axis range is not touch even if the amount of space is not sufficiend.
+/// The keepRange=true is very useful when a grid of histograms is plotted
+///
 void DrawLegends(vector<TLegend*> legs, bool keepRange=false)
 {
     PlaceLegends(legs, keepRange);
@@ -910,20 +1079,20 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange=false)
         leg->Draw();
 }
 
-static void UpdateFrame()
-{
-    gPad->Update();
-    gPad->RedrawAxis();
-    TFrame *fr = gPad->GetFrame();
-    fr->SetFillStyle(0);
-    fr->Draw();
-    gPad->Update();
-}
 
 
 
-
-void DividePad(vector<double> xDivs, vector<double> yDivs)
+/// Construct the lattice of pads according to the provided x and y sizes
+///
+/// Comparing to classical Divide method this function left no empty space
+/// between frames but left spaces for axes.
+/// Note that without setting the offsets, font sizes and tics manually
+/// the ticks differs between pads.
+/// From this reason, we recommend calling SetFTO() in each pad
+/// The margins of the original pad are kept
+/// @param xDivs vector defining horizontal sizes of frames, the absolute normalisation does not matter
+/// @param yDivs vector defining vertical sizes of frames, the absolute normalisation does not matter
+inline void DividePad(vector<double> xDivs, vector<double> yDivs)
 {
     double lMag = gPad->GetLeftMargin();
     double rMag = gPad->GetRightMargin();
@@ -1010,8 +1179,7 @@ static Point Px2NDC(Point p)
 
 
 
-
-static double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h)
+inline double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h)
 {
     Borders bS;
     bS.recs.push_back( {x, y, w, h} );
@@ -1098,6 +1266,9 @@ void Borders::FromAbs2px(double scaleUp, double scaleDn)
     }
 }
 
+///
+/// Return the borders of the provided histogram
+///
 void Borders::GetHistBorders(TH1 *h)
 {
     for(int i = 1; i <= h->GetNbinsX(); ++i) {
@@ -1136,6 +1307,7 @@ void Borders::GetHistBorders(TH1 *h)
 
 inline double hypot2(double x, double y) {return x*x+y*y;}
 
+/// Distance between two rectangles, 0 if overlap
 double Borders::Distance2(const Rectangle &r1, const Rectangle &r2)
 {
     double x1  = r1.fX;
@@ -1172,7 +1344,13 @@ double Borders::Distance2(const Rectangle &r1, const Rectangle &r2)
         return 0.;
 }
 
-static void CalcYaxisRange()
+/// Calculate the automatic range of the vertical axis and apply it.
+///
+/// Useful when several histograms are plotted to the same frame. 
+/// In such case the y-range is normally chosen according to the one which is plotted first (without "same")
+/// This method select such a range which corresponds to union of all y-ranges  
+/// When applying this method y-range is no more plotting order dependent
+inline void CalcYaxisRange()
 {
 	TH1 *hFrame = GetFrame();
 	TAxis *ax = hFrame->GetXaxis();

@@ -1393,7 +1393,7 @@ inline void CalcYaxisRange()
 	}
 }
 
-
+////////////////////////////////////////////////////////////////////
 /// Construct the lattice of pads according to the provided x and y sizes
 ///
 /// Comparing to classical Divide method this function left no empty space
@@ -1402,8 +1402,11 @@ inline void CalcYaxisRange()
 /// the ticks differs between pads.
 /// From this reason, we recommend calling SetFTO() in each pad
 /// The margins of the original pad are kept
+/// This method can be nested is some of the created pads needs additional subdivision.
+/// The resulting pads can be accessed by the standard cd() command as in ROOT Divide().
 /// @param xDivs vector defining horizontal sizes of frames, the absolute normalisation does not matter
 /// @param yDivs vector defining vertical sizes of frames, the absolute normalisation does not matter
+///
 inline void DividePad(vector<double> xDivs, vector<double> yDivs)
 {
     double lMag = gPad->GetLeftMargin();
@@ -1450,6 +1453,158 @@ inline void DividePad(vector<double> xDivs, vector<double> yDivs)
         pad->Draw();
     }
 }
+
+
+
+
+////////////////////////////////////////////////////////////////////
+/// Construct the lattice of frames according to the provided x and y sizes using transparency trick.
+///
+/// This function creates set of transparent overlapping pads, each of them covering whole canvas.
+/// The margins of of of these pads are chosen in such a way that the lattice of frames is constructed.
+/// Comparing to the DividePad method this method allows to include spaces between plotted frames.
+/// In case that "zero" spaces are selected the frame structure would look the same only the axis
+/// would not be cut off by the frame edge.
+/// On the other hand one needs to ensure that nuisance exes are not plotted
+/// (i.e. setting their font size to 0).
+/// Note that argument vectors divX and divY must always contain odd number of elements (sizes).
+/// Comparing to DividePad method this method can be run several time for the same pad.
+/// In such a way more complex frame structure can be created than the regular lattice.
+/// The resulting pads can be accessed by the standard cd() command as in ROOT Divide().
+/// In case of more calls on the same pad the indexes continues where there previous ended.
+///
+/// @param xDivs vector defining horizontal sizes of frames and spaces between them,
+///    the absolute normalisation does not matter. The structure is the following {space, frame, space, frame, space}
+///    In case of useMargins=true the very left and right space is taken from pad margins.
+/// @param yDivs the same as xDivs but in vertical coordinate
+/// @param useMargins specify wherever the current pad margins should be used.
+///
+inline void DivideTransparent(vector<double> divX, vector<double> divY, bool useMargins = true)
+{
+
+
+    if(divX.size() % 2 != 1 || divX.size() < (3-2*useMargins) ) {
+        cout << "Wrong divX= " << divX.size() << endl;
+        return;
+    }
+    if(divY.size() % 2 != 1 || divY.size() < (3-2*useMargins) ) {
+        cout << "Wrong divY= " << divY.size() << endl;
+        return;
+    }
+
+
+
+    double sumX = accumulate(divX.begin(), divX.end(), 0.0);
+    double sumY = accumulate(divY.begin(), divY.end(), 0.0);
+
+    if(useMargins == true) {
+        double l = gPad->GetLeftMargin();
+        double r = gPad->GetRightMargin();
+        double t = gPad->GetTopMargin();
+        double b = gPad->GetBottomMargin();
+        
+        vector<double> newX, newY;
+        newX.push_back(l * sumX/(1-l-r));
+        newX.insert(newX.end(), divX.begin(), divX.end());
+        newX.push_back(r * sumX/(1-l-r));
+
+        newY.push_back(t * sumY/(1-t-b));
+        newY.insert(newY.end(), divY.begin(), divY.end());
+        newY.push_back(b * sumY/(1-t-b));
+
+        DivideTransparent(newX, newY, false);
+        return;
+    }
+
+
+
+    vector<double> edgesX(divX.size()+1);
+    vector<double> edgesY(divY.size()+1);
+
+    edgesX[0] = edgesY[0] = 0;
+    for(int i = 1; i < edgesX.size(); ++i)
+        edgesX[i] = edgesX[i-1] + divX[i-1]/sumX;
+    for(int i = 1; i < edgesY.size(); ++i)
+        edgesY[i] = edgesY[i-1] + divY[i-1]/sumY;
+
+    int nPadsX = (divX.size()-1)/2;
+    int nPadsY = (divY.size()-1)/2;
+
+    TVirtualPad *pad = gPad;
+    int kStart = 1;
+    while(pad->GetPad(kStart))
+        ++kStart;
+    --kStart;
+
+
+    int i = 1;
+    //for(int x = 1; x < edgesX.size()-1; x+=2)
+    for(int y = 1; y < edgesY.size()-1; y+=2) 
+    for(int x = edgesX.size()-3; x >= 1; x-=2) {
+        //i = (nPadsY-1-(y-1)/2) * nPadsX + (nPadsX-1-(x-1)/2) + 1; 
+        i = ((y-1)/2) * nPadsX + ((x-1)/2) + 1; 
+        
+        TPad *pad = new TPad(TString::Format("%s_%d", gPad->GetName(), kStart+i), "", 0.0, 0.0, 1, 1);
+        pad->SetFillStyle(0);
+
+        
+        double l = max(0.,edgesX[x]);
+        double r = max(0.,1-edgesX[x+1]);
+        double t = max(0.,edgesY[y]);
+        double b = max(0.,1-edgesY[y+1]);
+
+        //cout <<"LeftRight " << l <<" "<<  r <<" "<< (1-l-r) <<" "<< i<< endl;
+
+        pad->SetTopMargin(t);
+        pad->SetBottomMargin(b);
+        pad->SetLeftMargin(l);
+        pad->SetRightMargin(r);
+
+        pad->SetNumber(kStart+i);
+        pad->Draw();
+        ++i;
+    }
+}
+
+/// Merge vectors into one
+///
+/// In current version up to 7 vectors can be merged
+inline vector<double> merge(vector<double> v1, vector<double> v2={}, vector<double> v3={}, vector<double> v4={}, vector<double> v5={}, vector<double> v6={}, vector<double> v7={} )
+{
+    vector<vector<double>> v = {v1, v2, v3, v4, v5, v6, v7};
+    vector<double> res;
+    for(int i = 0; i < v.size(); ++i)
+        res.insert(res.end(), v[i].begin(), v[i].end());
+    return res;
+}
+
+/// Repeat the provided pattern
+///
+/// Returns the vector which includes n times the vector x
+inline vector<double> repeat(vector<double> x, int n)
+{
+    vector<double> res = x;
+    for(int i = 1; i < n; ++i)
+        res.insert(res.end(), x.begin(), x.end());
+    return res;
+}
+
+/// Construct group of frames
+///
+/// Returns vector describing layout of n identical frames which are separated by the same space size
+/// The spaces before first space and after last frame are not included
+inline vector<double> group(double frame, double space, int n)
+{
+    vector<double> res;
+    for(int i = 0; i < n-1; ++i) {
+        res.push_back(frame);
+        res.push_back(space);
+    }
+    res.push_back(frame);
+    return res;
+}
+
+
 
 
 ///@}

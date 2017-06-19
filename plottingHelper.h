@@ -1383,7 +1383,6 @@ inline void CalcYaxisRange()
 
 	//cout <<"Minima "<< yMin <<" "<< yMax << endl;
 	if(gPad->GetLogy()) {
-		cout <<"PRAHA "<< yMin <<" "<< yMax << endl;
 		hFrame->SetMinimum(pow(10,yMin));
 		hFrame->SetMaximum(pow(10,yMax));
 	}
@@ -1392,6 +1391,36 @@ inline void CalcYaxisRange()
 		hFrame->SetMaximum(yMax);
 	}
 }
+
+/// Set simultaneously left and right margin of active pad
+///
+/// Implemented to avoid the bug in ROOT which causes that
+/// gPad->SetLeftMargin(0.5); gPad->SetRightMargin(0.1);
+/// is not always the same as
+/// gPad->SetRightMargin(0.1); gPad->SetLeftMargin(0.5);
+inline void SetLeftRight(double lMargin, double rMargin)
+{
+    gPad->SetLeftMargin(0);
+    gPad->SetRightMargin(0);
+    gPad->SetLeftMargin(lMargin);
+    gPad->SetRightMargin(rMargin);
+}
+
+/// Set simultaneously top and bottom margin of active pad
+///
+/// Implemented to avoid the bug in ROOT which causes that
+/// gPad->SetTopMargin(0.5); gPad->SetBottomMargin(0.1);
+/// is not always the same as
+/// gPad->SetBottomMargin(0.1); gPad->SetTopMargin(0.5);
+inline void SetTopBottom(double tMargin, double bMargin)
+{
+    gPad->SetTopMargin(0);
+    gPad->SetBottomMargin(0);
+    gPad->SetTopMargin(tMargin);
+    gPad->SetBottomMargin(bMargin);
+}
+
+
 
 ////////////////////////////////////////////////////////////////////
 /// Construct the lattice of pads according to the provided x and y sizes
@@ -1409,10 +1438,12 @@ inline void CalcYaxisRange()
 ///
 inline void DividePad(vector<double> xDivs, vector<double> yDivs)
 {
-    double lMag = gPad->GetLeftMargin();
-    double rMag = gPad->GetRightMargin();
-    double tMag = gPad->GetTopMargin();
-    double bMag = gPad->GetBottomMargin();
+    TVirtualPad *orgPad = gPad;
+
+    double lMag = orgPad->GetLeftMargin();
+    double rMag = orgPad->GetRightMargin();
+    double tMag = orgPad->GetTopMargin();
+    double bMag = orgPad->GetBottomMargin();
 
     int nx = xDivs.size();
     int ny = yDivs.size();
@@ -1436,13 +1467,19 @@ inline void DividePad(vector<double> xDivs, vector<double> yDivs)
         double yb = (iy == ny-1) ? 0 : 1-tMag-yPos[iy+1];
 
         int id = iy*nx+ix+1;
-        TPad *pad = new TPad(SF("%s_%d", gPad->GetName(), id), "", xl, yb, xr, yt);
+        TPad *pad = new TPad(SF("%s_%d", orgPad->GetName(), id), "", xl, yb, xr, yt);
 
-        pad->SetLeftMargin( (ix == 0) ? lMag/(xPos[1]+lMag) : 0);
-        pad->SetRightMargin( (ix == nx-1) ? rMag/( 1-lMag - xPos[nx-1]) : 0);
-        pad->SetTopMargin( (iy == 0) ? tMag/(yPos[1]+tMag) : 0);
-        pad->SetBottomMargin( (iy == ny-1) ? bMag/(1-tMag - yPos[ny-1]) : 0);
+        double lNew =  (ix == 0) ? lMag/(xPos[1]+lMag) : 0;
+        double rNew =  (ix == nx-1) ? rMag/( 1-lMag - xPos[nx-1]) : 0;
 
+        double tNew =  (iy == 0) ? tMag/(yPos[1]+tMag) : 0;
+        double bNew =   (iy == ny-1) ? bMag/(1-tMag - yPos[ny-1]) : 0;
+
+        pad->cd();
+        SetLeftRight(lNew, rNew);
+        SetTopBottom(tNew, bNew);
+        orgPad->cd();
+        
 //        if(ix == nx-1) {
 //            cout << "Hela : " <<  lMag + xPos[nx-1] << endl;
 //            cout << "lMag rMag : " <<lMag <<" "<<  rMag << endl;
@@ -1482,6 +1519,7 @@ inline void DividePad(vector<double> xDivs, vector<double> yDivs)
 inline void DivideTransparent(vector<double> divX, vector<double> divY, bool useMargins = true)
 {
 
+    TVirtualPad *orgPad = gPad;
 
     if(divX.size() % 2 != 1 || divX.size() < (3-2*useMargins) ) {
         cout << "Wrong divX= " << divX.size() << endl;
@@ -1492,17 +1530,22 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
         return;
     }
 
+    cout << "Left margin before is " << gPad->GetLeftMargin() << endl;
+    cout << "Right margin before is " << gPad->GetRightMargin() << endl;
 
 
     double sumX = accumulate(divX.begin(), divX.end(), 0.0);
     double sumY = accumulate(divY.begin(), divY.end(), 0.0);
 
     if(useMargins == true) {
-        double l = gPad->GetLeftMargin();
-        double r = gPad->GetRightMargin();
-        double t = gPad->GetTopMargin();
-        double b = gPad->GetBottomMargin();
+        double l = orgPad->GetLeftMargin();
+        double r = orgPad->GetRightMargin();
+        double t = orgPad->GetTopMargin();
+        double b = orgPad->GetBottomMargin();
         
+        cout << "Left margin is " << l << endl;
+        cout << "Right margin is " << r << endl;
+
         vector<double> newX, newY;
         newX.push_back(l * sumX/(1-l-r));
         newX.insert(newX.end(), divX.begin(), divX.end());
@@ -1530,9 +1573,8 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
     int nPadsX = (divX.size()-1)/2;
     int nPadsY = (divY.size()-1)/2;
 
-    TVirtualPad *pad = gPad;
     int kStart = 1;
-    while(pad->GetPad(kStart))
+    while(orgPad->GetPad(kStart))
         ++kStart;
     --kStart;
 
@@ -1544,7 +1586,7 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
         //i = (nPadsY-1-(y-1)/2) * nPadsX + (nPadsX-1-(x-1)/2) + 1; 
         i = ((y-1)/2) * nPadsX + ((x-1)/2) + 1; 
         
-        TPad *pad = new TPad(TString::Format("%s_%d", gPad->GetName(), kStart+i), "", 0.0, 0.0, 1, 1);
+        TPad *pad = new TPad(TString::Format("%s_%d", orgPad->GetName(), kStart+i), "", 0.0, 0.0, 1, 1);
         pad->SetFillStyle(0);
 
         
@@ -1555,10 +1597,11 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
 
         //cout <<"LeftRight " << l <<" "<<  r <<" "<< (1-l-r) <<" "<< i<< endl;
 
-        pad->SetTopMargin(t);
-        pad->SetBottomMargin(b);
-        pad->SetLeftMargin(l);
-        pad->SetRightMargin(r);
+        pad->cd();
+        SetLeftRight(l, r);
+        SetTopBottom(t, b);
+        orgPad->cd();
+
 
         pad->SetNumber(kStart+i);
         pad->Draw();

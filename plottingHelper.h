@@ -471,6 +471,81 @@ inline TLatex *CreateText(TString text, double fSize, int align)
     return lat;
 }
 
+//DrawTextUp(pad, TString, "c>", textSize, distance);
+//DrawTextUp(can->cd(5), "Here is some useful text", "c>", 15, 2.5);
+//DrawTextDown
+
+/// Draw latex at coordinates of the given frame
+inline void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double fSize=-1.0, TString style="")
+{
+    TVirtualPad *orgPad = gPad;
+
+    TCanvas *can = pad->GetCanvas();
+
+
+    TLatex *tex = new TLatex();
+
+    int hAlign = 2;
+    int vAlign = 2;
+
+    if(style.Contains('l')) hAlign = 1;
+    if(style.Contains('r')) hAlign = 3;
+    if(style.Contains('b')) vAlign = 1;
+    if(style.Contains('t')) vAlign = 3;
+
+    tex->SetTextAlign(10*hAlign + vAlign);
+
+    double angle = 0;
+    if(style.Contains('v')) angle = 0;
+    if(style.Contains('<')) angle = 270;
+    if(style.Contains('>')) angle = 90;
+    if(style.Contains('^')) angle = 180;
+    
+    tex->SetTextAngle(angle);
+    tex->SetTextFont(42);
+
+    if(fSize < 0) {
+        pad->cd();
+        fSize = RelFontToPx(GetFrame()->GetTitleSize());
+    }
+
+    //Draw inside pad
+    if(abs(x) < 1 && abs(y) < 1) {
+        pad->cd();
+        tex->SetTextSize(PxFontToRel(fSize));
+        double xLoc = pad->GetLeftMargin()   + x * (1 - pad->GetLeftMargin()   - pad->GetRightMargin());
+        double yLoc = pad->GetBottomMargin() + y * (1 - pad->GetBottomMargin() - pad->GetTopMargin());
+        TLine *l = new TLine();
+        l->DrawLineNDC(xLoc, yLoc, xLoc + 0.1, yLoc);
+        tex->DrawLatexNDC(xLoc, yLoc, text);
+    }
+    else {
+        can->cd();
+        tex->SetTextSize(PxFontToRel(fSize));
+
+        double x1 = pad->GetAbsXlowNDC() + pad->GetLeftMargin() * pad->GetAbsWNDC();
+        double x2 = pad->GetAbsXlowNDC() + (1-pad->GetRightMargin()) * pad->GetAbsWNDC();
+        double y1 = pad->GetAbsYlowNDC() + pad->GetBottomMargin()  * pad->GetAbsHNDC();
+        double y2 = pad->GetAbsYlowNDC() + (1-pad->GetTopMargin()) * pad->GetAbsHNDC();
+
+        double xGlob = x1 + (x2-x1)*x;
+        double yGlob = y1 + (y2-y1)*y;
+        tex->DrawLatexNDC(xGlob, yGlob, text);
+    }
+
+    orgPad->cd();
+}
+
+
+/// Draw latex at coordinates of the active frame
+inline void DrawLatex(double x, double y, TString text, double fSize=-1.0, TString style="")
+{
+    DrawLatex(gPad, x, y, text, fSize, style);
+}
+
+
+
+
 
 inline void DrawText(TVirtualPad *pad1, TVirtualPad *pad2, TLatex *lat, unsigned pos, double dist)
 {
@@ -1530,8 +1605,6 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
         return;
     }
 
-    cout << "Left margin before is " << gPad->GetLeftMargin() << endl;
-    cout << "Right margin before is " << gPad->GetRightMargin() << endl;
 
 
     double sumX = accumulate(divX.begin(), divX.end(), 0.0);
@@ -1543,8 +1616,6 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
         double t = orgPad->GetTopMargin();
         double b = orgPad->GetBottomMargin();
         
-        cout << "Left margin is " << l << endl;
-        cout << "Right margin is " << r << endl;
 
         vector<double> newX, newY;
         newX.push_back(l * sumX/(1-l-r));

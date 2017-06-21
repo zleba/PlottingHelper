@@ -418,71 +418,19 @@ inline void SetFTO(vector<double> fonts, vector<double> ticks, vector<double> of
 
 
 /// @name General titles
-/// Functions to simplify drawing of pad captions outside of the frames
+/// Functions to simplify drawing of latex captions related to the particular frame(s)
 /// Especially useful in case of describing complex grid of frames.
-/// For captions inside of frame consider using of automatic legend.
-/// Currently under development.
+/// For captions inside of frame consider also using of automatic legend.
 ///@{ 
 
-
-/// Draw text in top of the current pad.
-///
-/// Text size is given by frame title
-/// The text alignment l,c,r can be specified
-///
-inline void DrawTextUp(TString text, TString pos = "c")
-{
-    double t = gPad->GetTopMargin();
-    double l = gPad->GetLeftMargin();
-    double r = gPad->GetRightMargin();
-
-    double fSize = GetFrame()->GetTitleSize();
-
-    double off = 0.7;
-    double pxH = gPad->GetWh()*gPad->GetAbsHNDC();
-    double fact = RelFontToPx(fSize)/pxH;
-    off *= fact *3/4.; //conversion to "1354" height
-
-    TLatex *tex = new TLatex;
-    tex->SetTextSize(fSize);
-    if(pos == "c") {
-        tex->SetTextAlign(21);
-        tex->DrawTextNDC((l+1-r)/2, 1-t+off, text);
-    }
-    else if(pos == "l") {
-        tex->SetTextAlign(11);
-        tex->DrawTextNDC(l, 1-t+off, text);
-    }
-    else if(pos == "r") {
-        tex->SetTextAlign(31);
-        tex->DrawTextNDC(1-r, 1-t+off, text);
-    }
-}
-
-inline TLatex *CreateText(TString text, double fSize, int align)
+///Draw latex in coordinates x,y give a hull of two frames in given TPads
+inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, TString text, double fSize=-1.0, TString style="")
 {
     TVirtualPad *padOrg = gPad;
-    gPad->GetCanvas()->cd();
-    TLatex *lat = new TLatex(0, 0, text);
-    lat->SetNDC();
-    lat->SetTextSize(PxFontToRel(fSize));
-    lat->SetTextAlign(align);
-    padOrg->cd();
-    return lat;
-}
+    assert(pad1->GetCanvas() == pad2->GetCanvas());
+    TCanvas *can = pad1->GetCanvas();
 
-//DrawTextUp(pad, TString, "c>", textSize, distance);
-//DrawTextUp(can->cd(5), "Here is some useful text", "c>", 15, 2.5);
-//DrawTextDown
-
-/// Draw latex at coordinates of the given frame
-inline void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double fSize=-1.0, TString style="")
-{
-    TVirtualPad *orgPad = gPad;
-
-    TCanvas *can = pad->GetCanvas();
-
-
+    //Setting of style
     TLatex *tex = new TLatex();
 
     int hAlign = 2;
@@ -504,67 +452,9 @@ inline void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double
     tex->SetTextAngle(angle);
     tex->SetTextFont(42);
 
-    if(fSize < 0) {
-        pad->cd();
-        fSize = RelFontToPx(GetFrame()->GetTitleSize());
-    }
-
-    //Draw inside pad
-    if(abs(x) < 1 && abs(y) < 1) {
-        pad->cd();
-        tex->SetTextSize(PxFontToRel(fSize));
-        double xLoc = pad->GetLeftMargin()   + x * (1 - pad->GetLeftMargin()   - pad->GetRightMargin());
-        double yLoc = pad->GetBottomMargin() + y * (1 - pad->GetBottomMargin() - pad->GetTopMargin());
-        TLine *l = new TLine();
-        l->DrawLineNDC(xLoc, yLoc, xLoc + 0.1, yLoc);
-        tex->DrawLatexNDC(xLoc, yLoc, text);
-    }
-    else {
-        can->cd();
-        tex->SetTextSize(PxFontToRel(fSize));
-
-        double x1 = pad->GetAbsXlowNDC() + pad->GetLeftMargin() * pad->GetAbsWNDC();
-        double x2 = pad->GetAbsXlowNDC() + (1-pad->GetRightMargin()) * pad->GetAbsWNDC();
-        double y1 = pad->GetAbsYlowNDC() + pad->GetBottomMargin()  * pad->GetAbsHNDC();
-        double y2 = pad->GetAbsYlowNDC() + (1-pad->GetTopMargin()) * pad->GetAbsHNDC();
-
-        double xGlob = x1 + (x2-x1)*x;
-        double yGlob = y1 + (y2-y1)*y;
-        tex->DrawLatexNDC(xGlob, yGlob, text);
-    }
-
-    orgPad->cd();
-}
-
-
-/// Draw latex at coordinates of the active frame
-inline void DrawLatex(double x, double y, TString text, double fSize=-1.0, TString style="")
-{
-    DrawLatex(gPad, x, y, text, fSize, style);
-}
-
-
-
-
-
-inline void DrawText(TVirtualPad *pad1, TVirtualPad *pad2, TLatex *lat, unsigned pos, double dist)
-{
-    TVirtualPad *padOrg = gPad;
-    assert(pad1->GetCanvas() == pad2->GetCanvas());
-    TCanvas *can = pad1->GetCanvas();
-    can->cd();
-
     double l[2], r[2], b[2], t[2];
 
     TVirtualPad *pads[] = {pad1, pad2};
-
-    bool isHorisontal = true;
-    if(pad1->GetAbsYlowNDC() == pad2->GetAbsYlowNDC())
-        isHorisontal = true;
-    else if(pad1->GetAbsXlowNDC() == pad2->GetAbsXlowNDC())
-        isHorisontal = false;
-    else
-        return;
 
     for(int i = 0; i < 2; ++i) {
         l[i] = pads[i]->GetAbsXlowNDC() + pads[i]->GetAbsWNDC()*pads[i]->GetLeftMargin();
@@ -572,61 +462,189 @@ inline void DrawText(TVirtualPad *pad1, TVirtualPad *pad2, TLatex *lat, unsigned
         b[i] = pads[i]->GetAbsYlowNDC() + pads[i]->GetAbsHNDC()*pads[i]->GetBottomMargin();
         t[i] = pads[i]->GetAbsYlowNDC() + pads[i]->GetAbsHNDC()*(1-pads[i]->GetTopMargin());
     }
+
     double left  = min(l[0], l[1]);
     double right = max(r[0], r[1]);
-    cout << "LeftRight " << left <<" "<< right << endl;
     double bottom= min(b[0], b[1]);
     double top   = max(t[0], t[1]);
 
-    double x, y;
-    if(isHorisontal) {
-        if     (pos == kPos1 || pos == kPos7) x = left;
-        else if(pos == kPos2 || pos == kPos8) x = (left + right) / 2;
-        else if(pos == kPos3 || pos == kPos9) x = right;
-        else return;
-
-        double pxH = gPad->GetWh()*gPad->GetAbsHNDC();
-        double fact = RelFontToPx(lat->GetTextSize())/pxH;
-        dist *= fact * 3/4.; //conversion to "1354" height
+    double xGlob = left   + (right-left) *x;
+    double yGlob = bottom + (top-bottom) *y;
 
 
-        if(pos == kPos7 || pos == kPos8 || pos == kPos9)
-            y = pad1->GetAbsYlowNDC() - dist;
-        else if(pos == kPos1 || pos == kPos2 || pos == kPos3)
-            y = pad1->GetAbsYlowNDC() + (1-pad1->GetTopMargin())*pad1->GetAbsHNDC() + dist;
-        else return;
-        cout <<"yDist "<< pad1->GetAbsYlowNDC() <<" "<< pad1->GetAbsHNDC()<<" " << dist <<endl;
-    }
-    else { //verticaly located pads
-        cout << "Is vertical" << endl;
-        if     (pos == kPos7 || pos == kPos9) y = bottom;
-        else if(pos == kPos4 || pos == kPos6) y = (top + bottom) / 2;
-        else if(pos == kPos1 || pos == kPos3) y = top;
-        else return;
+    auto isBtw = [](double low, double x, double high) {return low < x && x < high;};
+    bool isInside = false;
+    for(int i = 0; (i < 2 && pads[0] != pads[1]) || (i<1); ++i) {
+        if(isBtw(l[i],xGlob,r[i]) && isBtw(b[i],yGlob,t[i]) ) {
+            pads[i]->cd();
 
-        double pxW =  gPad->GetWw() * gPad->GetAbsWNDC();
-        double fact = RelFontToPx(lat->GetTextSize())/pxW;
-        dist *= fact * 3/4.;
+            if(fSize < 0) fSize = RelFontToPx(GetFrame()->GetTitleSize());
+            tex->SetTextSize(PxFontToRel(fSize));
 
-        cout <<"xDist "<< pad1->GetAbsXlowNDC() <<" "<< pad1->GetAbsWNDC()<<" " << dist <<endl;
-        if(pos == kPos1 || pos == kPos4 || pos == kPos7)
-            x = pad1->GetAbsXlowNDC() - dist;
-        else if(pos == kPos3 || pos == kPos6 || pos == kPos9)
-            x = pad1->GetAbsXlowNDC() + pad1->GetAbsWNDC() + dist;
-        else return;
+            double xFactor = (r[i] - l[i]) / (right - left);
+            double yFactor = (t[i] - b[i]) / (top - bottom);
+            assert(x / xFactor < 1);
+            assert(y / yFactor < 1);
+
+
+            double xLoc = pads[i]->GetLeftMargin() + x/xFactor *
+                           (1 - pads[i]->GetLeftMargin() - pads[i]->GetRightMargin());
+            double yLoc = pads[i]->GetBottomMargin() + y/yFactor *
+                           (1 - pads[i]->GetBottomMargin() - pads[i]->GetTopMargin());
+
+            cout << "Hura " << xLoc << " "<< yLoc << endl;
+
+            TLine *l = new TLine();
+            l->SetLineColor(kRed);
+            l->DrawLineNDC(xLoc, yLoc, xLoc + 0.1, yLoc);
+            tex->DrawLatexNDC(xLoc, yLoc, text);
+            isInside = true;
+        }
     }
 
-    if(pos == kPos1 || pos == kPos2 || pos == kPos3) {
-        //double l1 = pad1->GetAbsXlowNDC() + pad1->GetAbsWNDC()*pad1->GetLeftMargin();
-        //double l2 = pad2->GetAbsXlowNDC() + pad2->GetAbsWNDC()*pad2->GetLeftMargin();
+    if(!isInside) {
+        if(fSize < 0) {
+            pads[0]->cd();
+            fSize = RelFontToPx(GetFrame()->GetTitleSize());
+        }
+        can->cd();
+        tex->SetTextSize(PxFontToRel(fSize));
+        tex->DrawLatexNDC(xGlob, yGlob, text);
     }
-
-    cout << "Plotting " <<(void*)gPad<<" "<< x <<" "<< y<<" "<< lat->GetTitle() << endl;
-    lat->DrawTextNDC(x, y, lat->GetTitle());
 
     gPad->Update();
     padOrg->cd();
 }
+
+
+/// Draw latex at coordinates of the frame inside the corresponding TPad
+inline void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double fSize=-1.0, TString style="")
+{
+    DrawLatex(pad, pad, x, y, text, fSize, style);
+}
+
+
+/// Draw latex at coordinates of the frame corresponding to active TPad
+inline void DrawLatex(double x, double y, TString text, double fSize=-1.0, TString style="")
+{
+    DrawLatex(gPad, x, y, text, fSize, style);
+}
+
+
+/// Draw latex with distant Offset to the border of the frame1 and fram2 hull
+///
+/// The offset coding is used to cover left, right, bottom and top scenario
+inline void DrawLatexLRTB(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="")
+{
+    TVirtualPad *padOrg = gPad;
+    if(fSize < 0) {
+        pad1->cd();
+        fSize = RelFontToPx(GetFrame()->GetTitleSize());
+        padOrg->cd();
+    }
+    auto Close = [](double x, double val) {return abs(x-1000*val) <1000;};
+
+    double x = 0.5, y = 0.5;
+
+
+    double b[2], t[2], l[2], r[2];
+
+    TVirtualPad *pads[] = {pad1, pad2};
+    for(int i = 0; i < 2; ++i) {
+        l[i] = pads[i]->GetAbsXlowNDC() + pads[i]->GetAbsWNDC()*pads[i]->GetLeftMargin();
+        r[i] = pads[i]->GetAbsXlowNDC() + pads[i]->GetAbsWNDC()*(1-pads[i]->GetRightMargin());
+        b[i] = pads[i]->GetAbsYlowNDC() + pads[i]->GetAbsHNDC()*pads[i]->GetBottomMargin();
+        t[i] = pads[i]->GetAbsYlowNDC() + pads[i]->GetAbsHNDC()*(1-pads[i]->GetTopMargin());
+    }
+
+    double left  = min(l[0], l[1]);
+    double right = max(r[0], r[1]);
+    double bottom= min(b[0], b[1]);
+    double top   = max(t[0], t[1]);
+
+    if(Close(Offset,2) || Close(Offset, 8)) {
+        if(style.Contains('l')) x = 0.0;
+        if(style.Contains('r')) x = 1.0;
+        double unit = (fSize * 3./4) / ( pad1->GetWh() * (top - bottom) );
+
+        if(Close(Offset,2)) y = 1 + unit*(Offset - 2000);
+        else                y = 0 - unit*(Offset - 8000);
+
+    }
+    else if(Close(Offset,4) || Close(Offset, 6)) {
+        if(style.Contains('b')) y = 0.0;
+        if(style.Contains('t')) y = 1.0;
+        double unit = (fSize * 3./4) / ( pad1->GetWw() * (right - left) );
+
+        if(Close(Offset,6)) x = 1 + unit*(Offset - 6000);
+        else                x = 0 - unit*(Offset - 4000);
+    }
+    else
+        assert(0);
+
+    DrawLatex(pad1, pad2, x, y, text, fSize, style);
+}
+
+///Draw latex up of frame1 and frame2
+inline void DrawLatexUp(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexLRTB(pad1, pad2, 2000 + Offset, text, fSize, style);
+}
+
+///Draw latex down of frame1 and frame2
+inline void DrawLatexDown(TVirtualPad *pad1,TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexLRTB(pad1, pad2, 8000 + Offset, text, fSize, style);
+}
+
+///Draw latex right of frame1 and frame2
+inline void DrawLatexRight(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexLRTB(pad1, pad2, 6000 + Offset, text, fSize, style);
+}
+
+///Draw latex left of frame1 and frame2
+inline void DrawLatexLeft(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexLRTB(pad1, pad2, 4000 + Offset, text, fSize, style);
+}
+
+
+///Draw latex up of frame corresponding to given pad
+inline void DrawLatexUp(TVirtualPad *pad, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexUp(pad, pad, Offset, text, fSize, style);
+}
+
+///Draw latex down of frame corresponding to given pad
+inline void DrawLatexDown(TVirtualPad *pad, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexDown(pad, pad, Offset, text, fSize, style);
+}
+
+///Draw latex right of frame corresponding to given pad
+inline void DrawLatexRight(TVirtualPad *pad, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexRight(pad, pad, Offset, text, fSize, style);
+}
+
+///Draw latex left of frame corresponding to given pad
+inline void DrawLatexLeft(TVirtualPad *pad, double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexLeft(pad, pad, Offset, text, fSize, style);
+}
+
+
+///Draw latex up of frame corresponding to active pad
+inline void DrawLatexUp(double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexUp(gPad, Offset, text, fSize, style);
+}
+///Draw latex down of frame corresponding to active pad
+inline void DrawLatexDown(double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexDown(gPad, Offset, text, fSize, style);
+}
+///Draw latex right of frame corresponding to active pad
+inline void DrawLatexRight(double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexRight(gPad, Offset, text, fSize, style);
+}
+///Draw latex left of frame corresponding to active pad
+inline void DrawLatexLeft(double Offset, TString text, double fSize=-1.0, TString style="") {
+    DrawLatexLeft(gPad, Offset, text, fSize, style);
+}
+
+
 
 
 ///@}

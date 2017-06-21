@@ -30,7 +30,9 @@ namespace plottingHelper {
 
 using namespace std;
 
-#define SF TString::Format 
+#ifndef SF
+    #define SF TString::Format 
+#endif
 
 
 
@@ -163,17 +165,28 @@ inline TH1 *GetFrame()
 			break;
       }
    }
-	return hobj;
+    if(!hobj) {cout << "No frame created in active pad" << endl;}
+
+   return hobj;
 }
 
 /// Return x-axis of the active frame
-inline TAxis *GetXaxis() { return GetFrame()->GetXaxis(); }  
+inline TAxis *GetXaxis() {
+    TH1 *frame = GetFrame();
+    return frame ? frame->GetXaxis() : nullptr;
+}
 
 /// Return y-axis of the active frame
-inline TAxis *GetYaxis() { return GetFrame()->GetYaxis(); }  
+inline TAxis *GetYaxis() {
+    TH1 *frame = GetFrame();
+    return frame ? frame->GetYaxis() : nullptr;
+}
 
 /// Return z-axis of the active frame
-inline TAxis *GetZaxis() { return GetFrame()->GetZaxis(); }  
+inline TAxis *GetZaxis() {
+    TH1 *frame = GetFrame();
+    return frame ? frame->GetZaxis() : nullptr;
+}  
 
 ///@} 
 
@@ -260,6 +273,8 @@ inline double TickAbsToRelY(double tick)
 inline void SetFonts(double pxX, double pxY = -1, double pxT = -1)
 {
     TH1 *frame = GetFrame();
+    if(!frame) return;
+
     if(pxY < 0) pxY = pxX;
     if(pxT < 0) pxT = pxX;
 
@@ -281,9 +296,11 @@ inline void SetFonts(double pxX, double pxY = -1, double pxT = -1)
 ///
 inline void SetTicks(double tickX, double tickY = -1)
 {
+    TH1 *frame = GetFrame();
+    if(!frame) return;
+
     //gPad->Update();
     if(tickY < 0) tickY = tickX;
-    TH1 *frame = GetFrame();
 	frame->GetXaxis()->SetTickSize(TickAbsToRelX(tickX) );
 	frame->GetYaxis()->SetTickSize(TickAbsToRelY(tickY) );
 }
@@ -296,6 +313,8 @@ inline void SetTicks(double tickX, double tickY = -1)
 inline void SetLabelOffsetX(double off)
 {
     TH1 *frame = GetFrame();
+    if(!frame) return;
+
     double labSize = frame->GetXaxis()->GetLabelSize();
     double off0 = 0;
     if(gPad->GetLogx()) {
@@ -330,6 +349,8 @@ inline void SetLabelOffsetX(double off)
 inline void SetTitleOffsetX(double off)
 {
     TH1 *frame = GetFrame();
+    if(!frame) return;
+
     TAxis *ax = frame->GetXaxis();
     off *= 3/4.;
     ax->SetTitleOffset(off* RelFontToPx(ax->GetTitleSize())/1.6 / ( gPad->GetWh()* ax->GetTitleSize()*gPad->GetAbsHNDC() ) );
@@ -345,6 +366,7 @@ inline void SetTitleOffsetX(double off)
 inline void SetLabelOffsetY(double off)
 {
     TH1 *frame = GetFrame();
+    if(!frame) return;
     TAxis *ax = frame->GetYaxis();
     double labSize = ax->GetLabelSize();
     double pxW =  gPad->GetWw() * gPad->GetAbsWNDC() ;
@@ -370,6 +392,7 @@ inline void SetLabelOffsetY(double off)
 inline void SetTitleOffsetY(double off)
 {
     TH1 *frame = GetFrame();
+    if(!frame) return;
     TAxis *ax = frame->GetYaxis();
     off *= 3/4.;//to vertical size of "0"
     ax->SetTitleOffset( off*  RelFontToPx(ax->GetTitleSize())/1.6 / ( gPad->GetWw()*ax->GetTitleSize()* gPad->GetAbsWNDC() ) );
@@ -418,13 +441,27 @@ inline void SetFTO(vector<double> fonts, vector<double> ticks, vector<double> of
 
 
 
-/// @name General titles
+/// @name Generalized titles
 /// Functions to simplify drawing of latex captions related to the particular frame(s)
 /// Especially useful in case of describing complex grid of frames.
 /// For captions inside of frame consider also using of automatic legend.
+/// Conventional axis titles can be easily "reproduced" with these methods
 ///@{ 
 
-///Draw latex in coordinates x,y give a hull of two frames in given TPads
+/// Draw latex in coordinates x,y give a hull of two frames in given TPads
+///
+/// The rectangular hull of two frames corresponding to pad1 and pad2 is used as an NDC-like coordinate system
+/// For example the x-value starts from the most left side of frame1 and/or frame2 and ends in the most right side of these frames
+/// Note that in current implementation given pads cannot contain any sub-pad = there must be only one frame in pad1 and one frame
+/// in pad2.
+/// @param pad1 The pad where the first frame is located
+/// @param pad2 The pad where the second frame is located (can be the same as pad1)
+/// @param x,y  Normalised coordinates between 0 and 1 defined by the hull of frame1 and frame2, 0,0 is on bottom left
+/// @param text Latex which will be plotted, consider using #splitline #bf, #it, #font[], #color[].
+/// @param fSize Font size in pixels, by default the font size is taken from the title of the first frame.
+/// @param style The text alignment and orientation. The text-orientation is defined by rotating
+/// of letter "v", that means "v,<,>,^". The default text alignment to the center horizontally and vertically.
+/// The text can be also aligned to the left "l" or right "r", vertically to the bottom "b" or top "t"
 inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, TString text, double fSize=-1.0, TString style="")
 {
     TVirtualPad *padOrg = gPad;
@@ -496,8 +533,10 @@ inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, 
     for(int i = 0; (i < 2 && pads[0] != pads[1]) || (i<1); ++i) {
         if(isBtw(l[i],xGlob,r[i]) && isBtw(b[i],yGlob,t[i]) ) {
             pads[i]->cd();
-
-            if(fSize < 0) fSize = RelFontToPx(GetFrame()->GetTitleSize());
+            if(fSize < 0) {
+                TH1 *frame = GetFrame();
+                fSize = frame ? RelFontToPx(frame->GetTitleSize()) : 12;
+            }
             tex->SetTextSize(PxFontToRel(fSize));
 
             double xFactor = (r[i] - l[i]) / (right - left);
@@ -522,7 +561,8 @@ inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, 
     if(!isInside) {
         if(fSize < 0) {
             pads[0]->cd();
-            fSize = RelFontToPx(GetFrame()->GetTitleSize());
+            TH1 *frame = GetFrame();
+            fSize = frame ? RelFontToPx(frame->GetTitleSize()) : 12;
         }
         can->cd();
         tex->SetTextSize(PxFontToRel(fSize));
@@ -535,6 +575,8 @@ inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, 
 
 
 /// Draw latex at coordinates of the frame inside the corresponding TPad
+///
+/// For description see the DrawLatex method, here only the one pad is provided
 inline void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double fSize=-1.0, TString style="")
 {
     DrawLatex(pad, pad, x, y, text, fSize, style);
@@ -542,21 +584,24 @@ inline void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double
 
 
 /// Draw latex at coordinates of the frame corresponding to active TPad
+///
+/// The same as DrawLatex but used for active pad
 inline void DrawLatex(double x, double y, TString text, double fSize=-1.0, TString style="")
 {
     DrawLatex(gPad, x, y, text, fSize, style);
 }
 
 
-/// Draw latex with distant Offset to the border of the frame1 and fram2 hull
+/// Draw latex with distant Offset to the border of the frame1 and frame2 hull
 ///
-/// The offset coding is used to cover left, right, bottom and top scenario
+/// The offset coding is used to cover left, right, bottom and top scenarios
 inline void DrawLatexLRTB(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="")
 {
     TVirtualPad *padOrg = gPad;
     if(fSize < 0) {
         pad1->cd();
-        fSize = RelFontToPx(GetFrame()->GetTitleSize());
+        TH1 *frame = GetFrame();
+        fSize = frame ? RelFontToPx(frame->GetTitleSize()) : 12;
         padOrg->cd();
     }
     auto Close = [](double x, double val) {return abs(x-1000*val) <1000;};
@@ -602,7 +647,10 @@ inline void DrawLatexLRTB(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, T
     DrawLatex(pad1, pad2, x, y, text, fSize, style);
 }
 
-///Draw latex up of frame1 and frame2
+/// Draw latex up of frame1 and frame2
+///
+/// Draw the latex above the frames 1 and 2. The Offset is in units of text height of text. It is exactly the same unit
+/// as used for the title offsets
 inline void DrawLatexUp(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="") {
     DrawLatexLRTB(pad1, pad2, 2000 + Offset, text, fSize, style);
 }
@@ -1410,8 +1458,12 @@ inline void UpdateFrame()
     gPad->Update();
     gPad->RedrawAxis();
     TFrame *fr = gPad->GetFrame();
-    fr->SetFillStyle(0);
-    fr->Draw();
+    if(fr) {
+        fr->SetFillStyle(0);
+        fr->Draw();
+    }
+    else
+        cout << "No frame at active pad" << endl;
     gPad->Update();
 }
 
@@ -1425,6 +1477,7 @@ inline void UpdateFrame()
 inline void CalcYaxisRange()
 {
 	TH1 *hFrame = GetFrame();
+    if(!hFrame) return;
 	TAxis *ax = hFrame->GetXaxis();
 
 	int iFirst = ax->GetFirst();

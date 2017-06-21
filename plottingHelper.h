@@ -436,19 +436,37 @@ inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, 
     int hAlign = 2;
     int vAlign = 2;
 
-    if(style.Contains('l')) hAlign = 1;
-    if(style.Contains('r')) hAlign = 3;
-    if(style.Contains('b')) vAlign = 1;
-    if(style.Contains('t')) vAlign = 3;
+    double angle;
+    if(style.Contains('>')) {
+        if(style.Contains('l')) vAlign = 1;
+        if(style.Contains('r')) vAlign = 3;
+        if(style.Contains('b')) hAlign = 1;
+        if(style.Contains('t')) hAlign = 3;
+        angle = 90;
+    }
+    else if(style.Contains('<')) {
+        if(style.Contains('l')) vAlign = 3;
+        if(style.Contains('r')) vAlign = 1;
+        if(style.Contains('b')) hAlign = 3;
+        if(style.Contains('t')) hAlign = 1;
+        angle = 270;
+    }
+    else if(style.Contains('^')) {
+        if(style.Contains('l')) hAlign = 3;
+        if(style.Contains('r')) hAlign = 1;
+        if(style.Contains('b')) vAlign = 3;
+        if(style.Contains('t')) vAlign = 1;
+        angle = 180;
+    }
+    else {
+        if(style.Contains('l')) hAlign = 1;
+        if(style.Contains('r')) hAlign = 3;
+        if(style.Contains('b')) vAlign = 1;
+        if(style.Contains('t')) vAlign = 3;
+        angle = 0;
+    }
 
     tex->SetTextAlign(10*hAlign + vAlign);
-
-    double angle = 0;
-    if(style.Contains('v')) angle = 0;
-    if(style.Contains('<')) angle = 270;
-    if(style.Contains('>')) angle = 90;
-    if(style.Contains('^')) angle = 180;
-    
     tex->SetTextAngle(angle);
     tex->SetTextFont(42);
 
@@ -492,11 +510,9 @@ inline void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, 
             double yLoc = pads[i]->GetBottomMargin() + y/yFactor *
                            (1 - pads[i]->GetBottomMargin() - pads[i]->GetTopMargin());
 
-            cout << "Hura " << xLoc << " "<< yLoc << endl;
-
-            TLine *l = new TLine();
-            l->SetLineColor(kRed);
-            l->DrawLineNDC(xLoc, yLoc, xLoc + 0.1, yLoc);
+            //TLine *l = new TLine();
+            //l->SetLineColor(kRed);
+            //l->DrawLineNDC(xLoc, yLoc, xLoc + 0.1, yLoc);
             tex->DrawLatexNDC(xLoc, yLoc, text);
             isInside = true;
         }

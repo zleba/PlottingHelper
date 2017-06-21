@@ -21,6 +21,7 @@
 #include <utility>
 #include <numeric>
 #include <string>
+#include <cassert>
 
 /// The namespace of whole Plotting Helper utility
 /// 
@@ -1630,11 +1631,11 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
 
     TVirtualPad *orgPad = gPad;
 
-    if(divX.size() % 2 != 1 || divX.size() < (3-2*useMargins) ) {
+    if(divX.size() % 2 != 1 || int(divX.size()) < (3-2*useMargins) ) {
         cout << "Wrong divX= " << divX.size() << endl;
         return;
     }
-    if(divY.size() % 2 != 1 || divY.size() < (3-2*useMargins) ) {
+    if(divY.size() % 2 != 1 || int(divY.size()) < (3-2*useMargins) ) {
         cout << "Wrong divY= " << divY.size() << endl;
         return;
     }
@@ -1670,13 +1671,13 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
     vector<double> edgesY(divY.size()+1);
 
     edgesX[0] = edgesY[0] = 0;
-    for(int i = 1; i < edgesX.size(); ++i)
+    for(unsigned i = 1; i < edgesX.size(); ++i)
         edgesX[i] = edgesX[i-1] + divX[i-1]/sumX;
-    for(int i = 1; i < edgesY.size(); ++i)
+    for(unsigned i = 1; i < edgesY.size(); ++i)
         edgesY[i] = edgesY[i-1] + divY[i-1]/sumY;
 
     int nPadsX = (divX.size()-1)/2;
-    int nPadsY = (divY.size()-1)/2;
+    //int nPadsY = (divY.size()-1)/2;
 
     int kStart = 1;
     while(orgPad->GetPad(kStart))
@@ -1686,7 +1687,7 @@ inline void DivideTransparent(vector<double> divX, vector<double> divY, bool use
 
     int i = 1;
     //for(int x = 1; x < edgesX.size()-1; x+=2)
-    for(int y = 1; y < edgesY.size()-1; y+=2) 
+    for(int y = 1; y < int(edgesY.size())-1; y+=2) 
     for(int x = edgesX.size()-3; x >= 1; x-=2) {
         //i = (nPadsY-1-(y-1)/2) * nPadsX + (nPadsX-1-(x-1)/2) + 1; 
         i = ((y-1)/2) * nPadsX + ((x-1)/2) + 1; 
@@ -1721,7 +1722,7 @@ inline vector<double> merge(vector<double> v1, vector<double> v2={}, vector<doub
 {
     vector<vector<double>> v = {v1, v2, v3, v4, v5, v6, v7};
     vector<double> res;
-    for(int i = 0; i < v.size(); ++i)
+    for(unsigned i = 0; i < v.size(); ++i)
         res.insert(res.end(), v[i].begin(), v[i].end());
     return res;
 }

@@ -6,7 +6,9 @@ Furthermore, package contains functions for creation of grid of pads.
 There is also an testing version of the automatic legend.
 
 To use this package in script, you first need to complile it by calling
-make
+```
+$ make
+```
 
 This command creates two shared libraries, one called libPlottingHelper.so using g++ compiler.
 Another called plottingHelper_C.so using compiler in ROOT.

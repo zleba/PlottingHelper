@@ -81,7 +81,6 @@ double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip);
 double MinDistance2(double minSkip, const Borders &br1, const Borders &br2);
 
 
-inline double hypot2(double x, double y) {return x*x+y*y;}
 
 
 /// @name Getters
@@ -968,6 +967,7 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
 
 
 
+///@}
 
 
 
@@ -1354,6 +1354,7 @@ void Borders::GetHistBorders(TH1 *h)
     }
 }
 
+inline double hypot2(double x, double y) {return x*x+y*y;}
 
 /// Distance between two rectangles, 0 if overlap
 double Borders::Distance2(const Rectangle &r1, const Rectangle &r2)
@@ -1392,7 +1393,6 @@ double Borders::Distance2(const Rectangle &r1, const Rectangle &r2)
         return 0.;
 }
 
-///@}
 
 
 /// @name Miscellaneous

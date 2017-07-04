@@ -10,9 +10,9 @@ To use this package in script, you first need to complile it by calling
 $ make
 ```
 
-This command creates two shared libraries, one called libPlottingHelper.so using g++ compiler.
-Another called plottingHelper_C.so using compiler in ROOT.
-For the time being the g++ version was found much faster and therefore is recommended for both Macros, compiled Macros and ROOT programs compiled by g++.
+This shell command creates two shared libraries, one called `libPlottingHelper.so` using `g++` compiler.
+Another called `plottingHelper_C.so` using compiler in ROOT.
+For the time being the `g++` version was found much faster and therefore is recommended for both Macros, compiled Macros and ROOT programs compiled by `g++`.
 
 And then put these lines to the beginning of your program:
 ```

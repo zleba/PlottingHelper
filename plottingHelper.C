@@ -1,12 +1,87 @@
 #include "plottingHelper.h"
 
 
+
+
 /// The namespace of whole Plotting Helper utility
 /// 
 ///
 namespace PlottingHelper {
 
 using namespace std;
+
+/////////////////////////////////////////////
+//Declaration of internal classes and structs
+/////////////////////////////////////////////
+
+
+// Struct specifying borders of some object which can be approximated by rectangles
+// We use such approach to define position of histograms
+struct Borders{
+    vector<Rectangle> recs;
+    void GetHistBorders(TH1 *h);
+    void FromAbs2px(double scaleUp, double scaleDn);
+    void FromNDC2px();
+    static double Distance2(const Rectangle &r1, const Rectangle &r2);
+};
+
+
+
+//Contains internal methods for automatic placement of legends
+struct PLACER {
+    int nLeg;
+    vector<unsigned> dims;
+    vector<vector<pair<int,int>>> layOuts;
+    vector<vector<double>> distToHists;
+
+    vector<vector<Borders>> legBorders;
+    vector<Borders> borders;
+
+    vector<double> SizesX, SizesY;
+
+    int nSteps = 10;
+    double minSepar;
+
+    void init(vector<TLegend *> legs, vector<double> &sizesX, vector<double> &sizesY);
+    double iterate(vector<int> &bestLayout);
+    void GetLegendsPositions();
+    void GetDistancesPx(double scaleUp, double scaleDn);
+    pair<double,double> GetSolution(vector<double> &xx, vector<double> &yy,
+                                                         int nScaleSteps=10);
+    void LoadHistoBorders(vector<Borders> &borders);
+    double analyze(vector<int> &indx, vector<double> &dists);
+};
+
+// Iterator which goes over all positions specified in the constructor
+//
+// Note that bitwise "or" operator | can be used to select more complex layout
+struct PosIterator {
+    PosIterator(int _nSteps, unsigned Pos) {
+        pos = Pos;
+        nSteps = _nSteps;
+        last = nSteps-1;
+        iSave = -1; jSave = nSteps;
+        //Iterate();
+    }
+    bool Iterate();
+
+    int nSteps, last;
+    int iSave, jSave;
+    unsigned pos;
+};
+
+
+
+
+//Don't search for lower distance if minSkip reach
+double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h);
+double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip);
+
+//Don't search for lower distance if minSkip reach
+double MinDistance2(double minSkip, const Borders &br1, const Borders &br2);
+
+
+inline double hypot2(double x, double y) {return x*x+y*y;}
 
 
 /// @name Getters
@@ -845,6 +920,57 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
 }
 
 
+    bool PosIterator::Iterate() {
+        int last = nSteps-1;
+        int i=0, j=0;
+        //cout << iSave <<" "<< jSave <<" "<< nSteps<< endl;
+        for(i = iSave; i < nSteps; ++i)
+        for(j = (jSave+1)*(i==iSave); j < nSteps; ++j) {
+            if(pos & kPos5)
+                goto after;
+            if((pos & kPos3)  && i==0 && j==last)
+                goto after;
+            if((pos & kPos1)  && i==0 && j==0)
+                goto after;
+            if((pos & kPos7)  && i==last && j==0)
+                goto after;
+            if((pos & kPos9)  && i==last && j==last)
+                goto after;
+
+            if((pos & kPos2c)  && i==0 && j==last/2)
+                goto after;
+            if((pos & kPos4c)  && i==last/2 && j==0)
+                goto after;
+            if((pos & kPos6c)  && i==last/2 && j==last)
+                goto after;
+            if((pos & kPos8c)  && i==last && j==last/2)
+                goto after;
+
+            if((pos & kPos2)  && i==0)
+                goto after;
+            if((pos & kPos8)  && i==last)
+                goto after;
+            if((pos & kPos4)  && j==0)
+                goto after;
+            if((pos & kPos6)  && j==last)
+                goto after;
+
+        }
+        after:
+        iSave = i;
+        jSave = j;
+        //cout << "Radek " << i << " "<< j << endl;
+        if(i > last)
+            return false;
+        else
+            return true;
+    }
+
+
+
+
+
+
     //Initalize layOuts, dims, legBorders, borders
     void PLACER::init(vector<TLegend *> legs, vector<double> &sizesX, vector<double> &sizesY) {
         nLeg = legs.size();
@@ -1634,6 +1760,7 @@ vector<double> group(double frame, double space, int n)
 
 }
 
+//dummy function
 void plottingHelper()
 {
 }

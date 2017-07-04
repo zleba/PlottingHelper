@@ -889,16 +889,16 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
         frameNow->SetMinimum(Max - (Max-Min)*scaleDn);
     }
 
-    /*
-    for(int i = 0; i < legs.size(); ++i) {
-        TLine *l = new TLine;
-        l->SetNDC();
-        l->DrawLineNDC(xx[i], yy[i], xx[i]+sizesX[i], yy[i]);
-        l->DrawLineNDC(xx[i], yy[i]+sizesY[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
-        l->DrawLineNDC(xx[i], yy[i], xx[i], yy[i]+sizesY[i]);
-        l->DrawLineNDC(xx[i]+sizesX[i], yy[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
-    }
-    */
+    
+    //for(int i = 0; i < legs.size(); ++i) {
+        //TLine *l = new TLine;
+        //l->SetNDC();
+        //l->DrawLineNDC(xx[i], yy[i], xx[i]+sizesX[i], yy[i]);
+        //l->DrawLineNDC(xx[i], yy[i]+sizesY[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
+        //l->DrawLineNDC(xx[i], yy[i], xx[i], yy[i]+sizesY[i]);
+        //l->DrawLineNDC(xx[i]+sizesX[i], yy[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
+    //}
+
 
 }
 

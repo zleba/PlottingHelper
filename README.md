@@ -41,6 +41,10 @@ where both dots "." can be replaced by the acutall location of the dynamic libra
 The `R__LOAD_LIBRARY` does nothing for compiled programs and therefore can be kept.
 
 
+### Documentation
+
+The code is documented by doxygen, in future the tutorial section is planned as well.
+
 https://codedocs.xyz/zleba/PlottingHelper/namespacePlottingHelper.html
 
 [![Documentation](https://codedocs.xyz/zleba/PlottingHelper.svg)](https://codedocs.xyz/zleba/PlottingHelper/)

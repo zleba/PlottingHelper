@@ -21,7 +21,9 @@ using namespace PlottingHelper;//pollute the namespace!
 
 In case of some problems one can alternatively load the library created by ROOT:
 ```
+#include "plottingHelper.h"
 R__LOAD_LIBRARY(plottingHelper_C.so)
+using namespace PlottingHelper;
 ```
 
 For programs complied by g++, the library must be added to the Makefile by the standard way:

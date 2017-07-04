@@ -835,14 +835,10 @@ void GetLegendSizes(TLegend *leg, double &SizeX, double &SizeY, double &SizeYroo
 
 }
 
-
-
-
 /// Setup the position of legends provided in legs array
 ///
 /// Note that the legends must be drawn manually
 /// To draw legends directly, use DrawLegends
-///
 void PlaceLegends(vector<TLegend*> legs, bool keepRange)
 {
     int nScaleSteps = keepRange ? 1 : 20;

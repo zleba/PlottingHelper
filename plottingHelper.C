@@ -918,6 +918,7 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
         leg->Draw();
 }
 
+///@}
 
     bool PosIterator::Iterate() {
         int last = nSteps-1;
@@ -967,7 +968,6 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
 
 
 
-///@}
 
 
 

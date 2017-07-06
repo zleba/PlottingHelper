@@ -39,7 +39,7 @@ struct PLACER {
 
     vector<double> SizesX, SizesY;
 
-    int nSteps = 10;
+    int nSteps = 11;
     double minSepar;
 
     void init(vector<TLegend *> legs, vector<double> &sizesX, vector<double> &sizesY);
@@ -856,11 +856,15 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
     PLACER placer;
     gPad->Update();
 
+    cout << "Before radek" << endl;
     placer.init(legs, sizesX, sizesY);
+    cout << "Before radek "<<__LINE__ << endl;
 
     vector<double> xx, yy;
     double scaleUp, scaleDn;
+    cout << "Before radek "<<__LINE__ <<" "<< xx.size() <<" "<< yy.size() << endl;
     tie(scaleUp, scaleDn) = placer.GetSolution(xx, yy, nScaleSteps);
+    cout << "After radek "<<__LINE__ <<" "<< xx.size() <<" "<< yy.size() << endl;
     //return;
     
     for(unsigned i = 0; i < legs.size(); ++i) {
@@ -910,8 +914,10 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
 void DrawLegends(vector<TLegend*> legs, bool keepRange)
 {
     PlaceLegends(legs, keepRange);
+    cout << "Ahoj holka " << endl;
     for(auto & leg : legs)
         leg->Draw();
+    cout << "Nazdar holka " << endl;
 }
 
 ///@}
@@ -924,27 +930,27 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
         for(j = (jSave+1)*(i==iSave); j < nSteps; ++j) {
             if(pos & kPos5)
                 goto after;
-            if((pos & kPos3)  && i==0 && j==last)
+            if((pos & kPos9)  && i==0 && j==last)
                 goto after;
-            if((pos & kPos1)  && i==0 && j==0)
+            if((pos & kPos7)  && i==0 && j==0)
                 goto after;
-            if((pos & kPos7)  && i==last && j==0)
+            if((pos & kPos1)  && i==last && j==0)
                 goto after;
-            if((pos & kPos9)  && i==last && j==last)
+            if((pos & kPos3)  && i==last && j==last)
                 goto after;
 
-            if((pos & kPos2c)  && i==0 && j==last/2)
+            if((pos & kPos8c)  && i==0 && j==last/2)
                 goto after;
             if((pos & kPos4c)  && i==last/2 && j==0)
                 goto after;
             if((pos & kPos6c)  && i==last/2 && j==last)
                 goto after;
-            if((pos & kPos8c)  && i==last && j==last/2)
+            if((pos & kPos2c)  && i==last && j==last/2)
                 goto after;
 
-            if((pos & kPos2)  && i==0)
+            if((pos & kPos8)  && i==0)
                 goto after;
-            if((pos & kPos8)  && i==last)
+            if((pos & kPos2)  && i==last)
                 goto after;
             if((pos & kPos4)  && j==0)
                 goto after;
@@ -1000,7 +1006,9 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
 
         while (1) {
             // Print
+            cout << "I am here before "<<__LINE__ << endl;
             double dist = analyze(idxs, distsNow);
+            cout << "I am here after "<<__LINE__ << endl;
 
             if(dist >= maxDist) {
                 bool state = true;
@@ -1082,12 +1090,14 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
             b.FromAbs2px(scaleUp, scaleDn);
 
         distToHists.resize(nLeg);
+        cout << "Holcicka " << __LINE__ << endl;
 
         for(int i = 0; i < nLeg; ++i) {
             distToHists[i].resize(dims[i]);
             for(unsigned l = 0; l < dims[i]; ++l) 
                 distToHists[i][l] = MinDistanceSingle(bordersPx, legBorders[i][l], 0.99*minSepar);
         }
+        cout << "Holcicka " << __LINE__ << endl;
     }
 
 
@@ -1105,9 +1115,12 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
                 scaleUp = pow(4, iUp/10.);
                 scaleDn = pow(4, iDn/10.);
 
+                cout << "Holcicka " << __LINE__ << endl;
                 GetDistancesPx(scaleUp, scaleDn);
+                cout << "Holcicka " << __LINE__ <<" "<< bestLayout.size()<< endl;
 
                 double dist = iterate(bestLayout);
+                cout << "Holcicka " << __LINE__ << endl;
 
                 if(dist > minSepar)
                     goto gotoAfterScaleLoop;
@@ -1165,13 +1178,16 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
 
     double PLACER::analyze(vector<int> &indx, vector<double> &dists) {
         double minDist = 1e40;
+        cout << "Ahoj Holka " <<indx.size()<< endl;
         //Distances to histograms
         for(unsigned k = 0; k < indx.size(); ++k) {
+            cout << "BBB " << distToHists[k].size()<<" "<<  indx[k] << endl;
             minDist = min(minDist, distToHists[k][indx[k]]);
             dists[k] = distToHists[k][indx[k]];
             if(minDist < minSepar)
                 return minDist;
         }
+        cout << "Ahoj Holka "<<__LINE__<<" " <<indx.size()<< endl;
 
         for(unsigned k = 0;   k < indx.size(); ++k) 
         for(unsigned l = k+1; l < indx.size(); ++l) {
@@ -1182,6 +1198,7 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
             if(minDist < minSepar)
                 return minDist;
         }
+        cout << "Ahoj Holka "<<__LINE__<<" " <<indx.size()<< endl;
 
 
         return minDist;
@@ -1244,7 +1261,9 @@ double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip)
 {
     double minDist = 1e40;
     for(Borders &b : bor) {
+        cout << "Holcicka " << __LINE__ << endl;
         double d = MinDistance2(0.99*minSkip, b, bSingle);
+        cout << "Holcicka " << __LINE__ << endl;
         minDist = min(minDist, d);
         if(minDist <= minSkip) return minDist;
     }

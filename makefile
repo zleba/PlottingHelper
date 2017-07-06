@@ -7,11 +7,14 @@ all: libPlottingHelper.so plottingHelper_C.so
 plottingHelper_C.so: plottingHelper.C
 	root -l -b -q $<++g
 
-libPlottingHelper.so: plottingHelper.o
-	${CXX}  -shared -Wl,-soname,$@ -o $@   $< ${LIBS} 
+libPlottingHelper.so: plottingHelper.o #myDict.cxx
+	${CXX} $(CFLAGS)  -shared -Wl,-soname,$@ -o $@   $^ ${LIBS} 
 
 plottingHelper.o: plottingHelper.C
 	${CXX}  ${CFLAGS} -fPIC -c $< ${LIBS} 
+
+myDict.cxx: plottingHelper.h
+	rootcint -f $@ -c $(CXXFLAGS) -p $^
 
 clean: 
 	rm -f libPlottingHelper.so plottingHelper.o plottingHelper_C.d plottingHelper_C_ACLiC_dict_rdict.pcm plottingHelper_C.so

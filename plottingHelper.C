@@ -1,8 +1,6 @@
 #include "plottingHelper.h"
 
 
-
-
 /// The namespace of whole Plotting Helper utility
 /// 
 ///
@@ -14,7 +12,7 @@ using namespace std;
 //Declaration of internal classes and structs
 /////////////////////////////////////////////
 
-
+namespace {
 // Struct specifying borders of some object which can be approximated by rectangles
 // We use such approach to define position of histograms
 struct Borders{
@@ -43,13 +41,14 @@ struct PLACER {
     double minSepar;
 
     void init(vector<TLegend *> legs, vector<double> &sizesX, vector<double> &sizesY);
-    double iterate(vector<int> &bestLayout);
+    pair<double,vector<int> > iterate();
     void GetLegendsPositions();
     void GetDistancesPx(double scaleUp, double scaleDn);
     pair<double,double> GetSolution(vector<double> &xx, vector<double> &yy,
                                                          int nScaleSteps=10);
     void LoadHistoBorders(vector<Borders> &borders);
-    double analyze(vector<int> &indx, vector<double> &dists);
+    double analyze(const vector<int> &indx, vector<double> &dists);
+
 };
 
 // Iterator which goes over all positions specified in the constructor
@@ -70,15 +69,15 @@ struct PosIterator {
     unsigned pos;
 };
 
-
-
-
-//Don't search for lower distance if minSkip reach
-double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h);
-double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip);
+}
 
 //Don't search for lower distance if minSkip reach
-double MinDistance2(double minSkip, const Borders &br1, const Borders &br2);
+static double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h);
+static double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip);
+
+//Don't search for lower distance if minSkip reach
+static double MinDistance2(double minSkip, const Borders &br1, const Borders &br2);
+
 
 
 
@@ -123,7 +122,7 @@ TH1 *GetFrame()
 			break;
       }
    }
-    if(!hobj) {cout << "No frame created in active pad" << endl;}
+    if(!hobj) {cerr << "No frame created in active pad" << endl;}
 
    return hobj;
 }
@@ -553,7 +552,7 @@ void DrawLatex(double x, double y, TString text, double fSize, TString style)
 /// Draw latex with distant Offset to the border of the frame1 and frame2 hull
 ///
 /// The offset coding is used to cover left, right, bottom and top scenarios
-void DrawLatexLRTB(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize, TString style)
+static void DrawLatexLRTB(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize, TString style)
 {
     TVirtualPad *padOrg = gPad;
     if(fSize < 0) {
@@ -685,13 +684,13 @@ void DrawLatexLeft(double Offset, TString text, double fSize, TString style) {
 /// @see newLegend()
 /// @param pos the position bit, for instance kPos2 | kPos8
 /// @return the number printed in decadic base to the string
-const char *SetLayout(unsigned pos)
+TString SetLayout(unsigned pos)
 {
-    return to_string(pos).c_str();
+    return to_string(pos);
 }
 
 
-unsigned SimplifyPos(unsigned pos)
+static unsigned SimplifyPos(unsigned pos)
 {
     if(pos & kPos5) return kPos5;
     if(pos & kPos2) pos &= !kPos1 & !kPos3;
@@ -758,7 +757,13 @@ TLegend *newLegend(unsigned pos, int nCols)
 {
         TLegend *leg = new TLegend(0., 0., 0., 0.);
         leg->SetName(SetLayout(pos));
-        leg->SetTextSize(GetYaxis()->GetTitleSize());
+
+        TAxis *axY = GetYaxis();
+        if(axY == nullptr) {
+            cerr << "There is no frame created, legend can't be plotted." << endl;
+            assert(0);
+        }
+        leg->SetTextSize(axY->GetTitleSize());
         leg->SetNColumns(nCols);
         return leg;
 }
@@ -798,7 +803,7 @@ void GetLegendSizes(TLegend *leg, double &SizeX, double &SizeY, double &SizeYroo
     for(const auto &&entry : *leg->GetListOfPrimitives()) {
         TString lab = dynamic_cast<TLegendEntry *>(entry)->GetLabel();
         TString opt = dynamic_cast<TLegendEntry *>(entry)->GetOption();
-        cout << "Label "<< leg->GetNRows()<<" " << lab << endl;
+        //cout << "Label "<< leg->GetNRows()<<" " << lab << endl;
         TLatex *lat = new TLatex(0.5, 0.5, lab);
         lat->SetTextSize(leg->GetTextSize());
         lat->SetTextFont(leg->GetTextFont());
@@ -819,7 +824,7 @@ void GetLegendSizes(TLegend *leg, double &SizeX, double &SizeY, double &SizeYroo
     double maxW = accumulate(maxC.begin(),maxC.end(),0.);
 
     int nRows = nHeaders + (nLegItems+nCols-1)/nCols;
-    //cout << "RADEK nRows " << nRows << endl;
+    //cout << "MyTag nRows " << nRows << endl;
     SizeY = lineSeparation*fSizeNDCy*nRows;
 
     headerW += 0.1*fSizeNDCx*markerSize;
@@ -856,15 +861,11 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
     PLACER placer;
     gPad->Update();
 
-    cout << "Before radek" << endl;
     placer.init(legs, sizesX, sizesY);
-    cout << "Before radek "<<__LINE__ << endl;
 
     vector<double> xx, yy;
     double scaleUp, scaleDn;
-    cout << "Before radek "<<__LINE__ <<" "<< xx.size() <<" "<< yy.size() << endl;
     tie(scaleUp, scaleDn) = placer.GetSolution(xx, yy, nScaleSteps);
-    cout << "After radek "<<__LINE__ <<" "<< xx.size() <<" "<< yy.size() << endl;
     //return;
     
     for(unsigned i = 0; i < legs.size(); ++i) {
@@ -893,15 +894,16 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
         frameNow->SetMinimum(Max - (Max-Min)*scaleDn);
     }
 
-    
-    //for(int i = 0; i < legs.size(); ++i) {
-        //TLine *l = new TLine;
-        //l->SetNDC();
-        //l->DrawLineNDC(xx[i], yy[i], xx[i]+sizesX[i], yy[i]);
-        //l->DrawLineNDC(xx[i], yy[i]+sizesY[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
-        //l->DrawLineNDC(xx[i], yy[i], xx[i], yy[i]+sizesY[i]);
-        //l->DrawLineNDC(xx[i]+sizesX[i], yy[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
-    //}
+    /*
+    for(unsigned i = 0; i < legs.size(); ++i) {
+        TLine *l = new TLine;
+        l->SetNDC();
+        l->DrawLineNDC(xx[i], yy[i], xx[i]+sizesX[i], yy[i]);
+        l->DrawLineNDC(xx[i], yy[i]+sizesY[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
+        l->DrawLineNDC(xx[i], yy[i], xx[i], yy[i]+sizesY[i]);
+        l->DrawLineNDC(xx[i]+sizesX[i], yy[i], xx[i]+sizesX[i], yy[i]+sizesY[i]);
+    }
+    */
 
 
 }
@@ -914,10 +916,8 @@ void PlaceLegends(vector<TLegend*> legs, bool keepRange)
 void DrawLegends(vector<TLegend*> legs, bool keepRange)
 {
     PlaceLegends(legs, keepRange);
-    cout << "Ahoj holka " << endl;
     for(auto & leg : legs)
         leg->Draw();
-    cout << "Nazdar holka " << endl;
 }
 
 ///@}
@@ -961,7 +961,7 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
         after:
         iSave = i;
         jSave = j;
-        //cout << "Radek " << i << " "<< j << endl;
+        //cout << "myTag2 " << i << " "<< j << endl;
         if(i > last)
             return false;
         else
@@ -997,18 +997,17 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
 
     }
 
-    double PLACER::iterate(vector<int> &bestLayout) {
+    pair<double,vector<int>> PLACER::iterate() {
         vector<int> idxs(dims.size());
         vector<double> distsNow(dims.size());
         vector<double> distsBest(dims.size());
+        vector<int> bestLayout;
 
         double maxDist = 0;
 
         while (1) {
             // Print
-            cout << "I am here before "<<__LINE__ << endl;
             double dist = analyze(idxs, distsNow);
-            cout << "I am here after "<<__LINE__ << endl;
 
             if(dist >= maxDist) {
                 bool state = true;
@@ -1031,7 +1030,7 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
             }
             if (j == dims.size()) break;
         }
-        return maxDist;
+        return make_pair(maxDist, bestLayout);
     }
 
 
@@ -1090,14 +1089,12 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
             b.FromAbs2px(scaleUp, scaleDn);
 
         distToHists.resize(nLeg);
-        cout << "Holcicka " << __LINE__ << endl;
 
         for(int i = 0; i < nLeg; ++i) {
             distToHists[i].resize(dims[i]);
             for(unsigned l = 0; l < dims[i]; ++l) 
                 distToHists[i][l] = MinDistanceSingle(bordersPx, legBorders[i][l], 0.99*minSepar);
         }
-        cout << "Holcicka " << __LINE__ << endl;
     }
 
 
@@ -1115,17 +1112,15 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
                 scaleUp = pow(4, iUp/10.);
                 scaleDn = pow(4, iDn/10.);
 
-                cout << "Holcicka " << __LINE__ << endl;
                 GetDistancesPx(scaleUp, scaleDn);
-                cout << "Holcicka " << __LINE__ <<" "<< bestLayout.size()<< endl;
-
-                double dist = iterate(bestLayout);
-                cout << "Holcicka " << __LINE__ << endl;
+                //double dist = iterate(&bestLayout);
+                double dist;
+                tie(dist, bestLayout) = iterate();
 
                 if(dist > minSepar)
                     goto gotoAfterScaleLoop;
         }
-        cout << "No solution found for legend" << endl;
+        cerr << "No solution without overlaps found for legends" << endl;
         
         gotoAfterScaleLoop:
 
@@ -1152,7 +1147,7 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
         //Load histograms
         vector<TObject *> hists;
         for(const auto &&prim : *gPad->GetListOfPrimitives()) {
-            cout << prim->GetName() <<" "<< prim->ClassName() <<  endl;
+            //cout << prim->GetName() <<" "<< prim->ClassName() <<  endl;
             if(strcmp(prim->GetName(),"hframe") && strcmp(prim->ClassName(),"TH1F"))
                 if(dynamic_cast<TH1*>(prim)) 
                     hists.push_back(prim);
@@ -1176,18 +1171,18 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
     }
 
 
-    double PLACER::analyze(vector<int> &indx, vector<double> &dists) {
+    double PLACER::analyze(const vector<int> &indx, vector<double> &dists) 
+    {
         double minDist = 1e40;
-        cout << "Ahoj Holka " <<indx.size()<< endl;
         //Distances to histograms
         for(unsigned k = 0; k < indx.size(); ++k) {
-            cout << "BBB " << distToHists[k].size()<<" "<<  indx[k] << endl;
+            //cout << "BBB " << distToHists[k].size()<<" "<<  indx[k] << endl;
+            //cout << "MinDist " << minDist <<" "<< distToHists[k][indx[k]] << endl;
             minDist = min(minDist, distToHists[k][indx[k]]);
             dists[k] = distToHists[k][indx[k]];
             if(minDist < minSepar)
                 return minDist;
         }
-        cout << "Ahoj Holka "<<__LINE__<<" " <<indx.size()<< endl;
 
         for(unsigned k = 0;   k < indx.size(); ++k) 
         for(unsigned l = k+1; l < indx.size(); ++l) {
@@ -1198,7 +1193,6 @@ void DrawLegends(vector<TLegend*> legs, bool keepRange)
             if(minDist < minSepar)
                 return minDist;
         }
-        cout << "Ahoj Holka "<<__LINE__<<" " <<indx.size()<< endl;
 
 
         return minDist;
@@ -1241,7 +1235,7 @@ Point Px2NDC(Point p)
 
 
 
-double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h)
+static double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double y, double w, double h)
 {
     Borders bS;
     bS.recs.push_back( {x, y, w, h} );
@@ -1257,13 +1251,11 @@ double MinDistanceSingle(vector<Borders> &bor, double minSkip, double x, double 
 }
 
 
-double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip)
+static double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip)
 {
     double minDist = 1e40;
     for(Borders &b : bor) {
-        cout << "Holcicka " << __LINE__ << endl;
         double d = MinDistance2(0.99*minSkip, b, bSingle);
-        cout << "Holcicka " << __LINE__ << endl;
         minDist = min(minDist, d);
         if(minDist <= minSkip) return minDist;
     }
@@ -1272,7 +1264,7 @@ double MinDistanceSingle(vector<Borders> &bor, Borders bSingle, double minSkip)
 
 
 
-double MinDistance2(double minSkip, const Borders &br1, const Borders &br2)
+static double MinDistance2(double minSkip, const Borders &br1, const Borders &br2)
 {
     double minDist = 1e40;
     for(const auto &r1 : br1.recs)
@@ -1284,6 +1276,7 @@ double MinDistance2(double minSkip, const Borders &br1, const Borders &br2)
     return minDist;
 
 }
+
 
 void Borders::FromNDC2px()
 {
@@ -1365,11 +1358,15 @@ void Borders::GetHistBorders(TH1 *h)
             double yMaxNow = max(yMax, yMaxLeft);
             recs.push_back({xMin, yMinNow, 0., yMaxNow-yMinNow});
         }
-
     }
 }
 
-inline double hypot2(double x, double y) {return x*x+y*y;}
+
+
+
+
+
+static double hypot2(double x, double y) {return x*x+y*y;}
 
 /// Distance between two rectangles, 0 if overlap
 double Borders::Distance2(const Rectangle &r1, const Rectangle &r2)
@@ -1428,7 +1425,7 @@ void UpdateFrame()
         fr->Draw();
     }
     else
-        cout << "No frame at active pad" << endl;
+        cerr << "No frame at active pad" << endl;
     gPad->Update();
 }
 
@@ -1592,11 +1589,15 @@ void DividePad(vector<double> xDivs, vector<double> yDivs)
         int id = iy*nx+ix+1;
         TPad *pad = new TPad(SF("%s_%d", orgPad->GetName(), id), "", xl, yb, xr, yt);
 
-        double lNew =  (ix == 0) ? lMag/(xPos[1]+lMag) : 0;
-        double rNew =  (ix == nx-1) ? rMag/( 1-lMag - xPos[nx-1]) : 0;
 
-        double tNew =  (iy == 0) ? tMag/(yPos[1]+tMag) : 0;
-        double bNew =   (iy == ny-1) ? bMag/(1-tMag - yPos[ny-1]) : 0;
+        double lNew =  (ix == 0) ? lMag/(xr - xl) : 0;
+        double rNew =  (ix == nx-1) ? rMag/(xr - xl) : 0;
+
+        double tNew =  (iy == 0) ? tMag/(yt - yb) : 0;
+        double bNew =   (iy == ny-1) ? bMag/(yt - yb) : 0;
+
+
+
 
         pad->cd();
         SetLeftRight(lNew, rNew);
@@ -1645,11 +1646,11 @@ void DivideTransparent(vector<double> divX, vector<double> divY, bool useMargins
     TVirtualPad *orgPad = gPad;
 
     if(divX.size() % 2 != 1 || int(divX.size()) < (3-2*useMargins) ) {
-        cout << "Wrong divX= " << divX.size() << endl;
+        cerr << "Wrong divX= " << divX.size() << endl;
         return;
     }
     if(divY.size() % 2 != 1 || int(divY.size()) < (3-2*useMargins) ) {
-        cout << "Wrong divY= " << divY.size() << endl;
+        cerr << "Wrong divY= " << divY.size() << endl;
         return;
     }
 

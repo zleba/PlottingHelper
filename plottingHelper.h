@@ -12,6 +12,7 @@
 #include "TMarker.h"
 #include "THStack.h"
 #include "TMultiGraph.h"
+#include "TLine.h"
 
 #include <iostream>
 #include <vector>
@@ -20,6 +21,11 @@
 #include <numeric>
 #include <string>
 #include <cassert>
+
+//#define LibraryPath /home/radek/Dropbox/patrick/undolding/PlottingHelper/libPlottingHelper.so
+R__LOAD_LIBRARY(/home/radek/Dropbox/patrick/undolding/PlottingHelper/libPlottingHelper.so)
+
+
 
 /// The namespace of whole Plotting Helper utility
 /// 
@@ -98,7 +104,6 @@ void SetFTO(vector<double> fonts, vector<double> ticks, vector<double> offsets);
 void DrawLatex(TVirtualPad *pad1, TVirtualPad *pad2, double x, double y, TString text, double fSize=-1.0, TString style="");
 void DrawLatex(TVirtualPad *pad, double x, double y, TString text, double fSize=-1.0, TString style="");
 void DrawLatex(double x, double y, TString text, double fSize=-1.0, TString style="");
-void DrawLatexLRTB(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="");
 
 void DrawLatexUp(TVirtualPad *pad1, TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="");
 void DrawLatexDown(TVirtualPad *pad1,TVirtualPad *pad2, double Offset, TString text, double fSize=-1.0, TString style="");
@@ -119,7 +124,7 @@ void DrawLatexLeft(double Offset, TString text, double fSize=-1.0, TString style
 Point Px2NDC(Point p);
 
 
-const char *SetLayout(unsigned pos);
+TString SetLayout(unsigned pos);
 
 ///
 /// Struct containing NDC sizes and positions of the corresponding TLatex

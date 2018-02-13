@@ -1,4 +1,4 @@
-CXX = g++ -g -Wall -std=c++1y -O3
+CXX = g++ -g -Wall -std=c++11 -Og
 CFLAGS = $(shell root-config --cflags)
 LIBS := $(shell root-config --libs)
 
@@ -25,8 +25,8 @@ clean:
 #	clang++ -O0  ${CFLAGS} -fPIC -c $<
 #	clang++ -O0 -shared -Wl,-soname,libplottingHelperNew.so -o libplottingHelperNew.so   plottingHelper.o
 
-#test: test.cpp 
-#	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. plottingHelper_C.so -o test  ${LIBS} 
+test: test.C 
+	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. plottingHelper_h.so  -o test  ${LIBS} 
 #
-#testFast: test.cpp libplottingHelper.so
-#	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. -L. -lplottingHelper -o testFast  ${LIBS} 
+testFast: test.C libPlottingHelper.so
+	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. -L. -lPlottingHelper -o testFast  ${LIBS} 

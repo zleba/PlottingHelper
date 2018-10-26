@@ -6,9 +6,22 @@ services:
 before_install:
     - docker pull rootproject/root-ubuntu16
     - docker images
+    - ./rd make all test
+    - ./rd ./test
+    - mkdir public; cp *.pdf public
 
 
 script:
 #Compile it
     - docker run  -v $PWD:~  --rm -it --user $(id -u) $image /bin/bash -c "cd ~;make all"
+    - 
+
+deploy:
+  provider: pages
+  local-dir : public
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep-history: true
+  on:
+    branch: master
 

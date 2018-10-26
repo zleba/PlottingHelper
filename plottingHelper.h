@@ -23,7 +23,8 @@
 #include <cassert>
 
 //#define LibraryPath /home/radek/Dropbox/patrick/undolding/PlottingHelper/libPlottingHelper.so
-R__LOAD_LIBRARY(/home/radek/Dropbox/patrick/undolding/PlottingHelper/libPlottingHelper.so)
+
+//R__LOAD_LIBRARY(/home/radek/Dropbox/patrick/undolding/PlottingHelper/libPlottingHelper.so)
 
 
 

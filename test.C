@@ -2,6 +2,7 @@
 #include "TCanvas.h"
 #include "TStyle.h"
 #include "TPad.h"
+#include "TGaxis.h"
 
 #include "plottingHelper.h"
 #include "RemoveOverlaps.h"

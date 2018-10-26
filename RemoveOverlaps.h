@@ -1,6 +1,7 @@
 #include "TLatex.h"
 #include "TROOT.h"
 #include "TAxis.h"
+#include "TGaxis.h"
 #include "TMath.h"
 #include "THLimitsFinder.h"
 #include "TTimeStamp.h"
@@ -95,7 +96,7 @@ inline RectangleNDC GetNDCmy(TLatex *lat)
 		rTitle.fY -= vAlign*rTitle.fHeight/2.;
 	}
 	else {
-		swap(rTitle.fWidth, rTitle.fHeight);
+		std::swap(rTitle.fWidth, rTitle.fHeight);
 		double rat = gPad->GetWh() / double(gPad->GetWw());
 		rat /= gPad->GetAbsWNDC() / double(gPad->GetAbsHNDC());
 		rTitle.fWidth *= rat;
@@ -123,7 +124,7 @@ inline RectangleNDC GetNDCmy(TLatex *lat)
 class myTGaxis : public TGaxis {
 
 public:
-	vector<RectangleNDC> recsNDC;
+	std::vector<RectangleNDC> recsNDC;
 	RectangleNDC rTitleNDC;
 	RectangleNDC rExpNDC;
 	RectangleNDC rTitleMyNDC;
@@ -458,8 +459,8 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
    }
 
 // Coordinates are normalized
-	//cout << "My range " << rwxmin <<" " << rwxmax << endl;
-	//cout << "My range " << xmin <<" " << xmax << endl;
+	//std::cout << "My range " << rwxmin <<" " << rwxmax << std::endl;
+	//std::cout << "My range " << xmin <<" " << xmax << std::endl;
 
    ratio1 = 1/(rwxmax-rwxmin);
    ratio2 = 1/(rwymax-rwymin);
@@ -591,7 +592,7 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
       ypl1 = y0;
       ypl2 = y1;
       PaintLineNDC(xpl1, ypl1, xpl2, ypl2);
-		//cout << "My life " << xpl1<<" "<< ypl1<<" "<< xpl2<<" "<< ypl2 <<  endl;
+		//std::cout << "My life " << xpl1<<" "<< ypl1<<" "<< xpl2<<" "<< ypl2 <<  std::endl;
    }
 
 // Draw axis title if it exists
@@ -660,9 +661,9 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
 			lat->SetName(TString("Title")+GetName());
 			rTitleNDC = GetNDCmy(lat);
 
-			//cout << "MONIKAAAAAAAAA " << lat->GetTextAlign() << endl;
-			//cout << "KockaX " << rTitleNDC.fX << " "<< xpl1 << endl;
-			//cout << "KockaY " << rTitleNDC.fY << " "<< ypl1 << endl;
+			//std::cout << "MONIKAAAAAAAAA " << lat->GetTextAlign() << std::endl;
+			//std::cout << "KockaX " << rTitleNDC.fX << " "<< xpl1 << std::endl;
+			//std::cout << "KockaY " << rTitleNDC.fY << " "<< ypl1 << std::endl;
 			if(!isVisual) lat->Delete();
 
 			//Shifted title RADEK
@@ -676,8 +677,8 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
 			latMy->Draw();
 			latMy->SetName(TString("TitleMy")+GetName());
 			rTitleMyNDC = GetNDCmy(latMy);
-			//cout << "KockaX " << rTitleNDC.fX << " "<< xpl1 << endl;
-			//cout << "KockaY " << rTitleNDC.fY << " "<< ypl1 << endl;
+			//std::cout << "KockaX " << rTitleNDC.fX << " "<< xpl1 << std::endl;
+			//std::cout << "KockaY " << rTitleNDC.fY << " "<< ypl1 << std::endl;
 			latMy->Delete();
 			//if(!isVisual) latMy->Delete();
 
@@ -739,7 +740,7 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
                   if (angle == 0) textaxis->SetTextAlign(21);
                   s = 3;
                }
-					cout << "Here first" << endl;
+					std::cout << "Here first" << std::endl;
                textaxis->PaintLatex(fAxis->GetBinCenter(i),
                                     ymin + s*fAxis->GetLabelOffset()*(gPad->GetUymax()-gPad->GetUymin()),
                                     angle,
@@ -752,14 +753,14 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
                   textaxis->SetTextAlign(12);
                   s = 3;
                }
-					cout << "Here second" << endl;
+					std::cout << "Here second" << std::endl;
                textaxis->PaintLatex(xmin + s*fAxis->GetLabelOffset()*(gPad->GetUxmax()-gPad->GetUxmin()),
                                     fAxis->GetBinCenter(i),
                                     0,
                                     textaxis->GetTextSize(),
                                     fAxis->GetBinLabel(i));
             } else {
-					cout << "Here third" << endl;
+					std::cout << "Here third" << std::endl;
                textaxis->PaintLatex(xmin - 3*fAxis->GetLabelOffset()*(gPad->GetUxmax()-gPad->GetUxmin()),
                                     ymin +(i-0.5)*(ymax-ymin)/nl,
                                     0,
@@ -1228,7 +1229,7 @@ L110:
                      if (fNModLabs) ChangeLabelAttributes(k+1, nlabels, textaxis, chtemp);
                      typolabel = chtemp;
                      if (!optionTime) typolabel.ReplaceAll("-", "#minus");
-							//cout << "New hope1" << endl;
+							//std::cout << "New hope1" << std::endl;
                      textaxis->PaintLatex(gPad->GetX1() + xx*(gPad->GetX2() - gPad->GetX1()),
                            gPad->GetY1() + yy*(gPad->GetY2() - gPad->GetY1()),
                            textaxis->GetTextAngle(),
@@ -1241,7 +1242,7 @@ L110:
 							TLatex *lat = new TLatex(xx, yy, typolabel.Data());
 							CopyLatexStyleNDC(lat, textaxis);
 							lat->Draw();
-							//cout << "Holcicka " << GetName() << endl;
+							//std::cout << "Holcicka " << GetName() << std::endl;
 							lat->SetName(TString::Format("LABEL%s", GetName()));
 							recsNDC.push_back(GetNDCmy(lat));
 							//if(!isVisual) lat->Delete();
@@ -1271,7 +1272,7 @@ L110:
                      }
                      typolabel = chtemp;
                      typolabel.ReplaceAll("-", "#minus");
-							cout << "New hope3" << endl;
+							std::cout << "New hope3" << std::endl;
                      textaxis->PaintLatex(gPad->GetX1() + xx*(gPad->GetX2() - gPad->GetX1()),
                            gPad->GetY1() + yy*(gPad->GetY2() - gPad->GetY1()),
                            0,
@@ -1307,12 +1308,12 @@ L110:
                            0,
                            textaxis->GetTextSize(),
                            typolabel.Data());
-					//cout << "PUSINKA " << typolabel << endl;
+					//std::cout << "PUSINKA " << typolabel << std::endl;
 					TLatex *lat = new TLatex(xx, yy, typolabel.Data());
 					lat->SetName("ExpInfo");
 					CopyLatexStyleNDC(lat, textaxis);
 					lat->Draw();
-					//cout << "Holcicka " << GetName() << endl;
+					//std::cout << "Holcicka " << GetName() << std::endl;
 					//recsNDC.push_back(GetNDCmyold(lat, GetName()));
 
 
@@ -1435,7 +1436,7 @@ L110:
             if ((nbinin <= n1a) || (j == 1) || (j == nbinin) || ((nbinin > n1a)
             && (j%kmod == 0))) {
 
-					cout << "RADEKhura " << endl;
+					std::cout << "RADEKhura " << std::endl;
                if (labelnumber == 0) {
                   textaxis->PaintTextNDC(xx,yy,"1");
 
@@ -1444,10 +1445,10 @@ L110:
 						TText *tex = new TText(xx, yy, "1");
 						CopyTextStyleNDC(tex, textaxis);
 						tex->Draw();
-						cout << "MMMMMMMMMMMM 1 : " << textaxis->GetTextAlign() << endl;
+						std::cout << "MMMMMMMMMMMM 1 : " << textaxis->GetTextAlign() << std::endl;
 						unsigned w, h;
 						tex->GetBoundingBox(w, h);
-						cout << "AhojHolka " << w << " "<< h << endl;
+						std::cout << "AhojHolka " << w << " "<< h << std::endl;
 						RectangleNDC Rec;
 						Rec.fX = xx;
 						Rec.fY = yy;
@@ -1479,11 +1480,11 @@ L110:
 						/*
 						TText *tex = new TText(xx, yy, "10");
 						CopyTextStyleNDC(tex, textaxis);
-						cout << "MMMMMMMMMMMM 10 : " << textaxis->GetTextAlign() << endl;
+						std::cout << "MMMMMMMMMMMM 10 : " << textaxis->GetTextAlign() << std::endl;
 						tex->Draw();
 						unsigned w, h;
 						tex->GetBoundingBox(w, h);
-						cout << "AhojHolka " << w << " "<< h << endl;
+						std::cout << "AhojHolka " << w << " "<< h << std::endl;
 						RectangleNDC Rec;
 						Rec.fX = xx;
 						Rec.fY = yy;
@@ -1511,7 +1512,7 @@ L110:
                } else {
                   if (noExponent) {
                      textaxis->PaintTextNDC(xx,yy,&label[first]);
-							cout << "RADEKhura nova3 PUSSSSAAAAAAAAAAAA " <<xx<<" "<<yy << endl;
+							std::cout << "RADEKhura nova3 PUSSSSAAAAAAAAAAAA " <<xx<<" "<<yy << std::endl;
 							TLatex *lat = new TLatex(xx, yy, &label[first]);
 							CopyLatexStyleNDC(lat, textaxis);
 							lat->Draw();
@@ -1524,13 +1525,13 @@ L110:
                         textaxis->PaintLatex(gPad->GetX1() + xx*(gPad->GetX2() - gPad->GetX1()),
                                              gPad->GetY1() + yy*(gPad->GetY2() - gPad->GetY1()),
                                              0, textaxis->GetTextSize(), typolabel.Data());
-								//cout << "RADEKhura nova4 " <<xx<<" "<<yy << endl;
+								//cout << "RADEKhura nova4 " <<xx<<" "<<yy << std::endl;
 								//TLatex *lat = static_cast<TLatex*>(textaxis->Clone());
 								//lat->SetTextColor(kBlue);
 								//lat->DrawLatexNDC(xx, yy, typolabel.Data());
 
-								cout << "MMMMMMMMMMMM rest : " << textaxis->GetTextAlign() << endl;
-								cout << "RADEKhura nova1 "<<xx<<" "<<yy << endl;
+								std::cout << "MMMMMMMMMMMM rest : " << textaxis->GetTextAlign() << std::endl;
+								std::cout << "RADEKhura nova1 "<<xx<<" "<<yy << std::endl;
 								TLatex *lat = new TLatex(xx, yy, typolabel.Data());
 								CopyLatexStyleNDC(lat, textaxis);
 								lat->Draw();
@@ -1660,7 +1661,7 @@ L160:
 								lat->SetName(TString::Format("LABEL%s", GetName()));
 								recsNDC.push_back(GetNDCmy(lat));
 								//if(!isVisual) lat->Delete();
-								//cout <<"TEREZKA2 "<<u<<" "<<v << endl;
+								//std::cout <<"TEREZKA2 "<<u<<" "<<v << std::endl;
                      }
                   }
                }
@@ -1692,11 +1693,9 @@ L210:
 
 inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool remLast, bool isVisual = false)
 {
-	//cout << "Helenka " << ax->GetName() << endl;
+	//std::cout << "Helenka " << ax->GetName() << std::endl;
 	pad->cd();
 	pad->Update();
-	double valMin, valMax;
-	int PxMin, PxMax;
 
 	bool isX;
 	if(!strcmp(ax->GetName(), "xaxis"))
@@ -1706,18 +1705,20 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool re
 	else
 		return 0;
 
+	double valMin, valMax;
+	//int PxMin, PxMax;
 
 	if(isX) {
 		valMin = pad->GetUxmin();
 		valMax = pad->GetUxmax();
-		PxMin = pad->XtoPixel(valMin);
-		PxMax = pad->XtoPixel(valMax);
+		//PxMin = pad->XtoPixel(valMin);
+		//PxMax = pad->XtoPixel(valMax);
 	}
 	else {
 		valMin = pad->GetUymin();
 		valMax = pad->GetUymax();
-		PxMin = pad->YtoPixel(valMin);
-		PxMax = pad->YtoPixel(valMax);
+		//PxMin = pad->YtoPixel(valMin);
+		//PxMax = pad->YtoPixel(valMax);
 	}
 
 	if((isX && pad->GetLogx()) || (!isX && pad->GetLogy()) ) {
@@ -1743,7 +1744,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool re
 
 
 	int ndiv = ax->GetNdivisions();
-	double wMin = gPad->GetUxmin(), wMax = gPad->GetUxmax();
+	//double wMin = gPad->GetUxmin(), wMax = gPad->GetUxmax();
 
 	gAx->SetMoreLogLabels(ax->GetMoreLogLabels());
 	gAx->SetNoExponent(ax->GetNoExponent());
@@ -1754,8 +1755,8 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool re
 		if(!pad->GetLogx())
 			gAx->PaintAxis(pad->GetUxmin(), pad->GetUymin(), pad->GetUxmax(), pad->GetUymin(), valMin, valMax, ndiv, "");
 		else {
-			cout << "RADEKOUTPUT " << pow(10,pad->GetUxmin()) <<" "<< pow(10,pad->GetUxmax()) << endl;
-			cout << "RADEKOUTPUT " << valMin <<" "<< valMax << endl;
+			std::cout << "RADEKOUTPUT " << pow(10,pad->GetUxmin()) <<" "<< pow(10,pad->GetUxmax()) << std::endl;
+			std::cout << "RADEKOUTPUT " << valMin <<" "<< valMax << std::endl;
 			//gPad->SetLogx();
 			//gAx->PaintAxis(pow(10,pad->GetUxmin()), pad->GetUymin(), pow(10,pad->GetUxmax()), pad->GetUymin(), valMin, valMax, ndiv, "G");
 			gAx->PaintAxis(pad->GetUxmin(), pad->GetUymin(), pad->GetUxmax(), pad->GetUymin(), valMin, valMax, ndiv, "G");
@@ -1773,7 +1774,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool re
 
 
 	TList *li =  gPad->GetListOfPrimitives();
-	for(int i = 0; i < gAx->recsNDC.size(); ++i) {
+	for(unsigned i = 0; i < gAx->recsNDC.size(); ++i) {
 			TLine *lin = new TLine;
 			lin->SetLineColor(kRed);
 			double myX1 = gAx->recsNDC[i].fX;
@@ -1786,7 +1787,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool re
 				lin->DrawLineNDC(myX1, myY1, myX1, myY2);
 				lin->DrawLineNDC(myX2, myY1, myX2, myY2);
 			}
-			//cout << "Marketka "<<isX<<" "<<i<<" "<<   myX1 <<" "<< myX2 <<" : "<< myY1<<" "<<myY2<< endl;
+			//std::cout << "Marketka "<<isX<<" "<<i<<" "<<   myX1 <<" "<< myX2 <<" : "<< myY1<<" "<<myY2<< std::endl;
 
 			bool isOutside = (isX && ((remFirst && myX1 < 0) || (remLast  && myX2 > 1))) ||
 			                (!isX && ((remFirst && myY1 < 0) || (remLast && myY2 > 1) ));
@@ -1795,7 +1796,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool re
 				//ax->ChangeLabel(i+1, -1, 0);
 				if(gAx->recsNDC[i].lat) li->Remove(gAx->recsNDC[i].lat);
 				if(gAx->recsNDC[i].tex) li->Remove(gAx->recsNDC[i].tex);
-				//cout << "Removing " << i+1 << endl;
+				//std::cout << "Removing " << i+1 << std::endl;
 			}
 
 
@@ -1851,9 +1852,9 @@ inline void RemoveLabels(TVirtualPad *pad, const char *axis)
 	TList *li =  pad->GetListOfPrimitives();
 	for( auto && p : *li) {
 		TString name = p->GetName();
-		//cout << "RADECEK " << name << endl;
+		//std::cout << "RADECEK " << name << std::endl;
 		if(name == TString("LABEL")+axis) {
-			//cout << "Removing " << name <<" "<< p->ClassName()<< endl;
+			//std::cout << "Removing " << name <<" "<< p->ClassName()<< std::endl;
 			li->Remove(p);
 		}
 		//if(gAx->recsNDC[i].tex) li->Remove(gAx->recsNDC[i].tex);
@@ -1904,7 +1905,7 @@ inline int GetIntersect(Edge e, Point p, double dirX, double dirY, double &shift
       shift2 = (e.p2.y - p.y ) / dirY;
 		assert(e.p1.y == e.p1.y);
 		assert(p.y == p.y);
-		//cout <<"Marketka "<< dirX << " "<< dirY << endl;
+		//std::cout <<"Marketka "<< dirX << " "<< dirY << std::endl;
 		assert(dirY == dirY);
       return 2;
     }
@@ -1921,7 +1922,7 @@ double myTGaxis::GetMinimalOffset()
 	//RectangleNDC rTitleNDC;
 	//RectangleNDC rTitleMyNDC;
 
-	auto AddRectangle = [](const RectangleNDC &rec, vector<Point> &Points, vector<Edge> &Edges) {
+	auto AddRectangle = [](const RectangleNDC &rec, std::vector<Point> &Points, std::vector<Edge> &Edges) {
 		Point P1(rec.fX, rec.fY);
 		Point P2(rec.fX+rec.fWidth, rec.fY);
 		Point P3(rec.fX, rec.fY+rec.fHeight);
@@ -1943,8 +1944,8 @@ double myTGaxis::GetMinimalOffset()
 		Edges.push_back(e4);
 	};
 
-	vector<Point> tPoints, tPointsMy;
-	vector<Edge>  tEdges, tEdgesMy;
+	std::vector<Point> tPoints, tPointsMy;
+	std::vector<Edge>  tEdges, tEdgesMy;
 	AddRectangle(rTitleNDC, tPoints, tEdges);
 	AddRectangle(rTitleMyNDC, tPointsMy, tEdgesMy);
 	double dirX = tPointsMy[0].x - tPoints[0].x;
@@ -1953,36 +1954,36 @@ double myTGaxis::GetMinimalOffset()
 	dirX /= l;
 	dirY /= l;
 
-	vector<Edge> lEdges;
-	vector<Point> lPoints;
+	std::vector<Edge> lEdges;
+	std::vector<Point> lPoints;
 	for(const RectangleNDC &r : recsNDC) {
 		AddRectangle(r, lPoints, lEdges);
 	}
 
 	double MinL = 1e30, MinT = -1e30, MinT0 = -1e30;
 	for(const Point &p : lPoints) {
-		MinL = abs(dirX)>abs(dirY) ? min(MinL, p.x) : min(MinL, p.y);
-		//cout << "Label " << p.y << endl;
+		MinL = abs(dirX)>abs(dirY) ? std::min(MinL, p.x) : std::min(MinL, p.y);
+		//std::cout << "Label " << p.y << std::endl;
 	}
 	for(const Point &p : tPoints) {
-		MinT = abs(dirX)>abs(dirY) ? max(MinT, p.x) : max(MinT, p.y);
-		//cout << "PointOrg " << p.y << endl;
+		MinT = abs(dirX)>abs(dirY) ? std::max(MinT, p.x) : std::max(MinT, p.y);
+		//std::cout << "PointOrg " << p.y << std::endl;
 	}
 	for(const Point &p : tPointsMy) {
-		MinT0 = abs(dirX)>abs(dirY) ? max(MinT0, p.x) : max(MinT0, p.y);
-		//cout << "PointMy " << p.y << endl;
+		MinT0 = abs(dirX)>abs(dirY) ? std::max(MinT0, p.x) : std::max(MinT0, p.y);
+		//std::cout << "PointMy " << p.y << std::endl;
 	}
 
 	double Factor = (MinL - MinT0) / (MinT - MinT0);
-	//cout << "Holkaaa " << MinT <<" "<< MinT0 << endl;
-	//cout << "MinL " << MinL  << endl;
+	//std::cout << "Holkaaa " << MinT <<" "<< MinT0 << std::endl;
+	//std::cout << "MinL " << MinL  << std::endl;
 
 	/*
 	vector<double> intersects;
 	for(const Point &p : tPoints) {
 		double shift1, shift2;
 		for(Edge &e : lEdges) {
-			cout << "Kamila " << dirX <<" "<< dirY << endl;
+			std::cout << "Kamila " << dirX <<" "<< dirY << std::endl;
 			int status = GetIntersect(e, p, dirX, dirY, shift1, shift2);
 			if(status == 2) {
 				intersects.push_back(shift1);
@@ -2014,8 +2015,8 @@ double myTGaxis::GetMinimalOffset()
 	*/
 	double myOffsetEstimate = abs(Factor) * GetTitleOffset();
 
-	//cout << "directions " << dirX << " "<< dirY << endl;
-	//cout << "myNumber " << myOffsetEstimate << endl;
+	//std::cout << "directions " << dirX << " "<< dirY << std::endl;
+	//std::cout << "myNumber " << myOffsetEstimate << std::endl;
 	return myOffsetEstimate;
 
 }

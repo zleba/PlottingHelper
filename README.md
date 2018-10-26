@@ -1,3 +1,6 @@
+[![Documentation](https://codedocs.xyz/zleba/PlottingHelper.svg)](https://codedocs.xyz/zleba/PlottingHelper/)
+[![Build Status](https://travis-ci.org/zleba/PlottingHelper.svg?branch=master)](https://travis-ci.org/zleba/PlottingHelper)
+
 # PlottingHelper
 Plotting utilities to makes plotting in ROOT a bit easier
 
@@ -7,7 +10,7 @@ There is also an testing version of the automatic legend.
 
 ### Compilation
 
-To use this package in script, you first need to complile it by calling
+To use this package in script, you first need to compile it by calling
 ```
 $ make
 ```
@@ -40,6 +43,16 @@ For programs complied by g++, the library must be added to the Makefile by the s
 where both dots "." can be replaced by the acutall location of the dynamic library.
 The `R__LOAD_LIBRARY` does nothing for compiled programs and therefore can be kept.
 
+### Using experimental RemoveOverlaps.h
+
+The header file `RemoveOverlaps.h` includes function which allows to remove partially overlapping labels of the axis.
+This can typically happen if the grid is plotted.
+The function is typically called in the following way
+```
+RemoveOverlaps(gPad, h->GetYaxis());
+```
+Which will remove the overlaps on the vertical axis.
+This header only library is independent on the PlottingHelper, but can be used also together.
 
 ### Documentation
 
@@ -47,4 +60,3 @@ The code is documented by doxygen, in future the tutorial section is planned as 
 
 https://codedocs.xyz/zleba/PlottingHelper/namespacePlottingHelper.html
 
-[![Documentation](https://codedocs.xyz/zleba/PlottingHelper.svg)](https://codedocs.xyz/zleba/PlottingHelper/)

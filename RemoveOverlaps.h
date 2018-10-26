@@ -1691,7 +1691,7 @@ L210:
 
 
 
-inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst, bool remLast, bool isVisual = false)
+inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bool remLast=true, bool isVisual = false)
 {
 	//std::cout << "Helenka " << ax->GetName() << std::endl;
 	pad->cd();

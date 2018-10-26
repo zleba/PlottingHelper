@@ -6,15 +6,13 @@ services:
 before_install:
     - docker pull rootproject/root-ubuntu16
     - docker images
-    - ./rd make all test
-    - ./rd ./test
-    - mkdir public; cp *.pdf public
 
 
 script:
 #Compile it
-    - docker run  -v $PWD:~  --rm -it --user $(id -u) $image /bin/bash -c "cd ~;make all"
-    - 
+    - ./rd make all test
+    - ./rd ./test
+    - mkdir public && cp *.pdf public
 
 deploy:
   provider: pages

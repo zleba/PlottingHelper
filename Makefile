@@ -1,5 +1,5 @@
 CXX = g++ -g -Wall -std=c++11 -Og
-CFLAGS = $(shell root-config --cflags)
+CFLAGS = $(shell root-config --cflags) -Wunused-function
 LIBS := $(shell root-config --libs)
 
 all: libPlottingHelper.so plottingHelper_C.so

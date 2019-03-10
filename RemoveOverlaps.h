@@ -740,7 +740,7 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
                   if (angle == 0) textaxis->SetTextAlign(21);
                   s = 3;
                }
-					std::cout << "Here first" << std::endl;
+					//std::cout << "Here first" << std::endl;
                textaxis->PaintLatex(fAxis->GetBinCenter(i),
                                     ymin + s*fAxis->GetLabelOffset()*(gPad->GetUymax()-gPad->GetUymin()),
                                     angle,
@@ -753,14 +753,14 @@ void PaintAxis(double_t xmin, double_t ymin, double_t xmax, double_t ymax,
                   textaxis->SetTextAlign(12);
                   s = 3;
                }
-					std::cout << "Here second" << std::endl;
+					//std::cout << "Here second" << std::endl;
                textaxis->PaintLatex(xmin + s*fAxis->GetLabelOffset()*(gPad->GetUxmax()-gPad->GetUxmin()),
                                     fAxis->GetBinCenter(i),
                                     0,
                                     textaxis->GetTextSize(),
                                     fAxis->GetBinLabel(i));
             } else {
-					std::cout << "Here third" << std::endl;
+					//std::cout << "Here third" << std::endl;
                textaxis->PaintLatex(xmin - 3*fAxis->GetLabelOffset()*(gPad->GetUxmax()-gPad->GetUxmin()),
                                     ymin +(i-0.5)*(ymax-ymin)/nl,
                                     0,
@@ -1272,7 +1272,7 @@ L110:
                      }
                      typolabel = chtemp;
                      typolabel.ReplaceAll("-", "#minus");
-							std::cout << "New hope3" << std::endl;
+							//std::cout << "New hope3" << std::endl;
                      textaxis->PaintLatex(gPad->GetX1() + xx*(gPad->GetX2() - gPad->GetX1()),
                            gPad->GetY1() + yy*(gPad->GetY2() - gPad->GetY1()),
                            0,
@@ -1436,7 +1436,7 @@ L110:
             if ((nbinin <= n1a) || (j == 1) || (j == nbinin) || ((nbinin > n1a)
             && (j%kmod == 0))) {
 
-					std::cout << "RADEKhura " << std::endl;
+					//std::cout << "RADEKhura " << std::endl;
                if (labelnumber == 0) {
                   textaxis->PaintTextNDC(xx,yy,"1");
 
@@ -1512,7 +1512,7 @@ L110:
                } else {
                   if (noExponent) {
                      textaxis->PaintTextNDC(xx,yy,&label[first]);
-							std::cout << "RADEKhura nova3 PUSSSSAAAAAAAAAAAA " <<xx<<" "<<yy << std::endl;
+							//std::cout << "RADEKhura nova3 PUSSSSAAAAAAAAAAAA " <<xx<<" "<<yy << std::endl;
 							TLatex *lat = new TLatex(xx, yy, &label[first]);
 							CopyLatexStyleNDC(lat, textaxis);
 							lat->Draw();
@@ -1530,8 +1530,8 @@ L110:
 								//lat->SetTextColor(kBlue);
 								//lat->DrawLatexNDC(xx, yy, typolabel.Data());
 
-								std::cout << "MMMMMMMMMMMM rest : " << textaxis->GetTextAlign() << std::endl;
-								std::cout << "RADEKhura nova1 "<<xx<<" "<<yy << std::endl;
+								//std::cout << "MMMMMMMMMMMM rest : " << textaxis->GetTextAlign() << std::endl;
+								//std::cout << "RADEKhura nova1 "<<xx<<" "<<yy << std::endl;
 								TLatex *lat = new TLatex(xx, yy, typolabel.Data());
 								CopyLatexStyleNDC(lat, textaxis);
 								lat->Draw();
@@ -1755,8 +1755,8 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bo
 		if(!pad->GetLogx())
 			gAx->PaintAxis(pad->GetUxmin(), pad->GetUymin(), pad->GetUxmax(), pad->GetUymin(), valMin, valMax, ndiv, "");
 		else {
-			std::cout << "RADEKOUTPUT " << pow(10,pad->GetUxmin()) <<" "<< pow(10,pad->GetUxmax()) << std::endl;
-			std::cout << "RADEKOUTPUT " << valMin <<" "<< valMax << std::endl;
+			//std::cout << "RADEKOUTPUT " << pow(10,pad->GetUxmin()) <<" "<< pow(10,pad->GetUxmax()) << std::endl;
+			//std::cout << "RADEKOUTPUT " << valMin <<" "<< valMax << std::endl;
 			//gPad->SetLogx();
 			//gAx->PaintAxis(pow(10,pad->GetUxmin()), pad->GetUymin(), pow(10,pad->GetUxmax()), pad->GetUymin(), valMin, valMax, ndiv, "G");
 			gAx->PaintAxis(pad->GetUxmin(), pad->GetUymin(), pad->GetUxmax(), pad->GetUymin(), valMin, valMax, ndiv, "G");

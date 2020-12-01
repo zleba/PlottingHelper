@@ -1825,7 +1825,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bo
                 TString iName = gAx->recsNDC[i].lat->GetTitle();
                 TString jName = gAx->recsNDC[j].lat->GetTitle();
 
-                cout << "Radek " << iName <<" "<< jName << endl;
+                //cout << "Radek " << iName <<" "<< jName << endl;
 
                 int rem;
 

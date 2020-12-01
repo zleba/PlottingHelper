@@ -1798,9 +1798,57 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bo
 				if(gAx->recsNDC[i].tex) li->Remove(gAx->recsNDC[i].tex);
 				//std::cout << "Removing " << i+1 << std::endl;
 			}
-
-
 	}
+
+
+    //remove when pair of labels intersect (with MoreLogLabels)
+	for(unsigned i = 0;   i < gAx->recsNDC.size(); ++i) 
+	for(unsigned j = i+1; j < gAx->recsNDC.size(); ++j) {
+			TLine *lin = new TLine;
+			lin->SetLineColor(kRed);
+			double iX1 = gAx->recsNDC[i].fX;
+			double iX2 = gAx->recsNDC[i].fX+ gAx->recsNDC[i].fWidth;
+			double iY1 = gAx->recsNDC[i].fY;
+			double iY2 = gAx->recsNDC[i].fY+ gAx->recsNDC[i].fHeight;
+
+			double jX1 = gAx->recsNDC[j].fX;
+			double jX2 = gAx->recsNDC[j].fX+ gAx->recsNDC[j].fWidth;
+			double jY1 = gAx->recsNDC[j].fY;
+			double jY2 = gAx->recsNDC[j].fY+ gAx->recsNDC[j].fHeight;
+
+
+
+			bool isColision = (isX && ((iX1 < jX1 && jX1 < iX2) ||  (iX1 < jX2 && jX2 < iX2)    ));
+
+
+			if(isColision &&  gAx->recsNDC[i].lat && gAx->recsNDC[j].lat) {
+                TString iName = gAx->recsNDC[i].lat->GetTitle();
+                TString jName = gAx->recsNDC[j].lat->GetTitle();
+
+                cout << "Radek " << iName <<" "<< jName << endl;
+
+                int rem;
+
+                if(iName[0] > jName[0])
+                    rem = i;
+                else
+                    rem = j;
+
+
+				//ax->ChangeLabel(i+1, -1, 0);
+				if(gAx->recsNDC[rem].lat) li->Remove(gAx->recsNDC[rem].lat);
+				if(gAx->recsNDC[rem].tex) li->Remove(gAx->recsNDC[rem].tex);
+
+
+				//if(gAx->recsNDC[j].lat) li->Remove(gAx->recsNDC[j].lat);
+				//if(gAx->recsNDC[j].tex) li->Remove(gAx->recsNDC[j].tex);
+
+				//std::cout << "Removing " << i+1 << std::endl;
+			}
+	}
+
+
+
 
 
 

@@ -26,7 +26,10 @@ clean:
 #	clang++ -O0 -shared -Wl,-soname,libplottingHelperNew.so -o libplottingHelperNew.so   plottingHelper.o
 
 test: test.C 
-	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. plottingHelper_C.so  -o test  ${LIBS} 
+	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. plottingHelper_C.so  -o $@  ${LIBS} 
+
+test2: test2.C 
+	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. plottingHelper_C.so  -o $@  ${LIBS} 
 #
 testFast: test.C libPlottingHelper.so
-	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. -L. -lPlottingHelper -o testFast  ${LIBS} 
+	${CXX} -Wall ${CFLAGS} $<  -Wl,-rpath,. -L. -lPlottingHelper -o $@  ${LIBS} 

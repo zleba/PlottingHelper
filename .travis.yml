@@ -13,6 +13,7 @@ script:
     - ./rd make all test
     - ./rd ./test && mv testGrid.pdf  testGrid1.pdf
     - ./rd root -l -b -q test.C && mv testGrid.pdf  testGrid2.pdf
+    - ./rd root -l -b -q test2.C && mv testGrid.pdf  testGrid3.pdf
     - ./rd python test.py 
     - mkdir public && cp *.pdf public
 

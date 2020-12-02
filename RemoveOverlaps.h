@@ -1802,50 +1802,43 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bo
 
 
     //remove when pair of labels intersect (with MoreLogLabels)
-	for(unsigned i = 0;   i < gAx->recsNDC.size(); ++i) 
-	for(unsigned j = i+1; j < gAx->recsNDC.size(); ++j) {
-			TLine *lin = new TLine;
-			lin->SetLineColor(kRed);
-			double iX1 = gAx->recsNDC[i].fX;
-			double iX2 = gAx->recsNDC[i].fX+ gAx->recsNDC[i].fWidth;
-			double iY1 = gAx->recsNDC[i].fY;
-			double iY2 = gAx->recsNDC[i].fY+ gAx->recsNDC[i].fHeight;
+   for(unsigned i = 0;   i < gAx->recsNDC.size(); ++i) 
+   for(unsigned j = i+1; j < gAx->recsNDC.size(); ++j) {
+      TLine *lin = new TLine;
+      lin->SetLineColor(kRed);
+      double iX1 = gAx->recsNDC[i].fX;
+      double iX2 = gAx->recsNDC[i].fX+ gAx->recsNDC[i].fWidth;
+      double iY1 = gAx->recsNDC[i].fY;
+      double iY2 = gAx->recsNDC[i].fY+ gAx->recsNDC[i].fHeight;
 
-			double jX1 = gAx->recsNDC[j].fX;
-			double jX2 = gAx->recsNDC[j].fX+ gAx->recsNDC[j].fWidth;
-			double jY1 = gAx->recsNDC[j].fY;
-			double jY2 = gAx->recsNDC[j].fY+ gAx->recsNDC[j].fHeight;
-
-
-
-			bool isColision = (isX && ((iX1 < jX1 && jX1 < iX2) ||  (iX1 < jX2 && jX2 < iX2)    ));
+      double jX1 = gAx->recsNDC[j].fX;
+      double jX2 = gAx->recsNDC[j].fX+ gAx->recsNDC[j].fWidth;
+      double jY1 = gAx->recsNDC[j].fY;
+      double jY2 = gAx->recsNDC[j].fY+ gAx->recsNDC[j].fHeight;
 
 
-			if(isColision &&  gAx->recsNDC[i].lat && gAx->recsNDC[j].lat) {
-                TString iName = gAx->recsNDC[i].lat->GetTitle();
-                TString jName = gAx->recsNDC[j].lat->GetTitle();
 
-                //cout << "Radek " << iName <<" "<< jName << endl;
-
-                int rem;
-
-                if(iName[0] > jName[0])
-                    rem = i;
-                else
-                    rem = j;
+      bool isColision = (isX  && ((iX1 < jX1 && jX1 < iX2) ||  (iX1 < jX2 && jX2 < iX2)    )) ||
+                        (!isX && ((iY1 < jY1 && jY1 < iY2) ||  (iY1 < jY2 && jY2 < iY2)    ));
 
 
-				//ax->ChangeLabel(i+1, -1, 0);
-				if(gAx->recsNDC[rem].lat) li->Remove(gAx->recsNDC[rem].lat);
-				if(gAx->recsNDC[rem].tex) li->Remove(gAx->recsNDC[rem].tex);
+      if(isColision &&  gAx->recsNDC[i].lat && gAx->recsNDC[j].lat) {
+         TString iName = gAx->recsNDC[i].lat->GetTitle();
+         TString jName = gAx->recsNDC[j].lat->GetTitle();
 
+         if(iName.Length() < 1 || jName.Length() < 1) continue;
 
-				//if(gAx->recsNDC[j].lat) li->Remove(gAx->recsNDC[j].lat);
-				//if(gAx->recsNDC[j].tex) li->Remove(gAx->recsNDC[j].tex);
+         int rem;
 
-				//std::cout << "Removing " << i+1 << std::endl;
-			}
-	}
+         if(iName[0] > jName[0])
+            rem = i;
+         else
+            rem = j;
+
+         if(gAx->recsNDC[rem].lat) li->Remove(gAx->recsNDC[rem].lat);
+         if(gAx->recsNDC[rem].tex) li->Remove(gAx->recsNDC[rem].tex);
+      }
+   }
 
 
 

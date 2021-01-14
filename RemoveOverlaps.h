@@ -1691,7 +1691,7 @@ L210:
 
 
 
-inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, vector<TString> excluded = {}, bool remFirst=true, bool remLast=true, bool isVisual = false)
+inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, std::vector<TString> excluded = {}, bool remFirst=true, bool remLast=true, bool isVisual = false)
 {
 	//std::cout << "Helenka " << ax->GetName() << std::endl;
 	pad->cd();
@@ -1799,7 +1799,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, vector<TString> exclud
             name.ReplaceAll("{", "");
             name.ReplaceAll("}", "");
 
-            //cout << "Helenka " << name << endl;
+            //std::cout << "Helenka " << name << std::endl;
             if(find(excluded.begin(), excluded.end(), name) != excluded.end()) {
                 isRemoved = true;
             }

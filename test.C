@@ -29,8 +29,8 @@ void test()
         GetYaxis()->SetRangeUser(0, 300);
         DrawLatexUp( -1,  Form("n_{Ev} = %d", nEv));
         //Remove overlaps of both axes
-        RemoveOverlaps(gPad, GetXaxis(), true, true);
-        RemoveOverlaps(gPad, GetYaxis(), true, true);
+        RemoveOverlaps(gPad, GetXaxis(), {"-1", "2", "3"}, true, true);
+        RemoveOverlaps(gPad, GetYaxis(), {"150", "200"}, true, true);
     }
 
     DrawLatexUp(can->GetPad(1), can->GetPad(5), 2, "This is a testing grid");

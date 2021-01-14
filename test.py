@@ -33,8 +33,8 @@ for i in range(5*3):
     ph.DrawLatexUp( -1,  "n_{Ev} = "+str(nEv));
 
     #Remove overlaps of both axes
-    #RemoveOverlaps(gPad, GetXaxis(), true, true);
-    #RemoveOverlaps(gPad, GetYaxis(), true, true);
+    #RemoveOverlaps(gPad, GetXaxis(), {}, true, true);
+    #RemoveOverlaps(gPad, GetYaxis(), {], true, true);
 
 ph.DrawLatexUp(can.GetPad(1), can.GetPad(5), 2, "This is a testing grid in Python");
 can.SaveAs("testGridPy.pdf");

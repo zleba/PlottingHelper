@@ -1691,7 +1691,7 @@ L210:
 
 
 
-inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bool remLast=true, bool isVisual = false)
+inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, vector<TString> excluded = {}, bool remFirst=true, bool remLast=true, bool isVisual = false)
 {
 	//std::cout << "Helenka " << ax->GetName() << std::endl;
 	pad->cd();
@@ -1789,10 +1789,22 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, bool remFirst=true, bo
 			}
 			//std::cout << "Marketka "<<isX<<" "<<i<<" "<<   myX1 <<" "<< myX2 <<" : "<< myY1<<" "<<myY2<< std::endl;
 
-			bool isOutside = (isX && ((remFirst && myX1 < 0) || (remLast  && myX2 > 1))) ||
+			bool isRemoved = (isX && ((remFirst && myX1 < 0) || (remLast  && myX2 > 1))) ||
 			                (!isX && ((remFirst && myY1 < 0) || (remLast && myY2 > 1) ));
 
-			if(isOutside) {
+            //removing labels by names
+            TString name = gAx->recsNDC[i].lat->GetTitle();
+            name.ReplaceAll("#minus", "-");
+            name.ReplaceAll("#times", " ");
+            name.ReplaceAll("{", "");
+            name.ReplaceAll("}", "");
+
+            cout << "Helenka " << name << endl;
+            if(find(excluded.begin(), excluded.end(), name) != excluded.end()) {
+                isRemoved = true;
+            }
+
+			if(isRemoved) {
 				//ax->ChangeLabel(i+1, -1, 0);
 				if(gAx->recsNDC[i].lat) li->Remove(gAx->recsNDC[i].lat);
 				if(gAx->recsNDC[i].tex) li->Remove(gAx->recsNDC[i].tex);

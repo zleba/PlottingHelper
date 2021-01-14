@@ -27,7 +27,7 @@ void test2()
         }
         h->Draw("hist e");
         GetXaxis()->SetMoreLogLabels();
-        GetXaxis()->SetNoExponent();
+        //GetXaxis()->SetNoExponent();
 
 
 
@@ -42,8 +42,8 @@ void test2()
         if(i%5 != 0 ) GetYaxis()->SetLabelSize(0.001);
         if(i < 10 ) GetXaxis()->SetLabelSize(0.001);
 
-        RemoveOverlaps(gPad, GetXaxis(), true, true);
-        RemoveOverlaps(gPad, GetYaxis(), true, true);
+        RemoveOverlaps(gPad, GetXaxis(), {"10^3"}, true, true);
+        RemoveOverlaps(gPad, GetYaxis(), {}, true, true);
     }
 
     DrawLatexUp(can->GetPad(1), can->GetPad(5), 2, "This is a testing grid");

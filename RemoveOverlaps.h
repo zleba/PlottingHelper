@@ -1799,7 +1799,7 @@ inline double RemoveOverlaps(TVirtualPad *pad, TAxis *ax, vector<TString> exclud
             name.ReplaceAll("{", "");
             name.ReplaceAll("}", "");
 
-            cout << "Helenka " << name << endl;
+            //cout << "Helenka " << name << endl;
             if(find(excluded.begin(), excluded.end(), name) != excluded.end()) {
                 isRemoved = true;
             }
